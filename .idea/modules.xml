@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/esports-web/esports-web.iml" filepath="$PROJECT_DIR$/esports-web/esports-web.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/esports-zhandoushaung.iml" filepath="$PROJECT_DIR$/.idea/esports-zhandoushaung.iml" />
+    </modules>
+  </component>
+</project>

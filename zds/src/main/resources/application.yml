@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: zds
+  
+  datasource:
+    url: jdbc:mysql://localhost:3306/esports_zds?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    username: root
+    password: 741700Dy//
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: 8080
+
+# 自定义 JWT 配置
+jwt:
+  secret: esports_zds_secret_key_2026_university_gaming_platform
+  expiration: 86400000 # 24小时
