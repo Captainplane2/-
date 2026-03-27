@@ -2,104 +2,147 @@
   <div class="community-page full-container">
     <div class="page-header">
       <h1 class="page-title">竞技交流</h1>
-      <el-button type="primary" icon="Edit" @click="showPostDialog = true">发布动态</el-button>
+      <el-button type="primary" size="large" icon="EditPen" @click="handleCreateClick">发布新帖</el-button>
     </div>
 
-    <el-row :gutter="24">
-      <el-col :span="18">
-        <div class="content-box">
-          <el-tabs v-model="queryProject" @tab-change="fetchPosts">
-            <el-tab-pane label="全部分类" name="" />
-            <el-tab-pane label="英雄联盟" name="LOL" />
-            <el-tab-pane label="王者荣耀" name="王者荣耀" />
-            <el-tab-pane label="CS2" name="CS2" />
-          </el-tabs>
+    <div class="community-content">
+      <!-- 左侧分类与项目过滤 -->
+      <div class="sidebar">
+        <el-card shadow="never" class="filter-card">
+          <div class="filter-title">讨论板块</div>
+          <el-menu :default-active="filterCategory" class="filter-menu" @select="handleCategorySelect">
+            <el-menu-item index="全部">全部板块</el-menu-item>
+            <el-menu-item index="赛事讨论">赛事讨论</el-menu-item>
+            <el-menu-item index="技术交流">技术交流</el-menu-item>
+            <el-menu-item index="组队开黑">组队开黑</el-menu-item>
+            <el-menu-item index="吃瓜灌水">吃瓜灌水</el-menu-item>
+          </el-menu>
 
-          <div v-loading="loading" class="post-list">
-            <div v-for="post in posts" :key="post.id" class="post-item" @click="viewPost(post.id)">
-              <div class="post-main">
-                <h3 class="post-title">{{ post.title }}</h3>
-                <p class="post-content">{{ truncateContent(post.content) }}</p>
-                <div class="post-footer">
-                  <div class="meta">
-                    <span class="user">选手 #{{ post.userId }}</span>
-                    <span class="time">{{ formatTime(post.createTime) }}</span>
-                    <el-tag size="small" effect="plain">{{ post.gameProject }}</el-tag>
-                  </div>
-                  <div class="stats">
-                    <span><el-icon><View /></el-icon> {{ post.views }}</span>
-                    <span><el-icon><Star /></el-icon> {{ post.likes }}</span>
-                    <span><el-icon><ChatLineRound /></el-icon> {{ post.comments }}</span>
-                  </div>
-                </div>
-              </div>
+          <div class="filter-title" style="margin-top: 20px;">游戏专区</div>
+          <el-radio-group v-model="filterProject" @change="fetchPosts" class="project-radio" size="small">
+            <el-radio-button label="全部">全部</el-radio-button>
+            <el-radio-button label="LOL">LOL</el-radio-button>
+            <el-radio-button label="王者荣耀">王者</el-radio-button>
+            <el-radio-button label="CS2">CS2</el-radio-button>
+          </el-radio-group>
+        </el-card>
+      </div>
+
+      <!-- 右侧帖子列表 -->
+      <div class="main-list" v-loading="loading">
+        <el-card v-for="post in posts" :key="post.id" class="post-card" shadow="hover" @click="goDetail(post.id)">
+          <div class="post-header">
+            <div class="post-meta">
+              <el-tag size="small" type="info" class="meta-tag">{{ post.category }}</el-tag>
+              <el-tag size="small" effect="plain" class="meta-tag">{{ post.gameProject || '综合' }}</el-tag>
             </div>
-            <el-empty v-if="posts.length === 0" description="暂无讨论内容" />
+            <span class="post-time">{{ formatDate(post.createTime) }}</span>
           </div>
-        </div>
-      </el-col>
-
-      <el-col :span="6">
-        <el-card class="side-card" header="社区热议">
-          <div class="hot-list">
-            <div v-for="(p, index) in posts.slice(0, 5)" :key="p.id" class="hot-item">
-              <span class="rank">{{ index + 1 }}</span>
-              <span class="hot-title">{{ p.title }}</span>
+          <h2 class="post-title">{{ post.title }}</h2>
+          <p class="post-summary">{{ stripHtml(post.content).substring(0, 100) }}...</p>
+          
+          <div class="post-footer">
+            <div class="author-info">
+              <el-avatar :size="24" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
+              <span class="nickname">{{ post.nickname }}</span>
+              <span class="university">· {{ post.university }}</span>
+            </div>
+            <div class="stats-info">
+              <span class="stat-item"><el-icon><View /></el-icon> {{ post.views || 0 }}</span>
+              <span class="stat-item"><el-icon><ChatDotRound /></el-icon> {{ post.comments || 0 }}</span>
             </div>
           </div>
         </el-card>
-      </el-col>
-    </el-row>
 
-    <!-- 弹窗部分 -->
-    <el-dialog v-model="showPostDialog" title="发表新帖" width="600px">
-      <el-form :model="postForm" label-width="80px">
-        <el-form-item label="标题">
-          <el-input v-model="postForm.title" />
+        <el-empty v-if="posts.length === 0" description="该板块暂无帖子，快来抢占沙发吧！" />
+      </div>
+    </div>
+
+    <!-- 发帖弹窗 -->
+    <el-dialog v-model="createDialogVisible" title="发布新帖" width="800px" top="5vh">
+      <el-form :model="createForm" label-width="80px">
+        <el-form-item label="帖子标题" required>
+          <el-input v-model="createForm.title" placeholder="请输入吸引人的标题..." />
         </el-form-item>
-        <el-form-item label="竞技项目">
-          <el-select v-model="postForm.gameProject" class="w-full">
-            <el-option label="英雄联盟" value="LOL" />
-            <el-option label="王者荣耀" value="王者荣耀" />
-            <el-option label="CS2" value="CS2" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="正文内容">
-          <el-input v-model="postForm.content" type="textarea" :rows="6" />
+        <el-row>
+          <el-col :span="12">
+            <el-form-item label="所属板块" required>
+              <el-select v-model="createForm.category" class="w-full">
+                <el-option label="赛事讨论" value="赛事讨论" />
+                <el-option label="技术交流" value="技术交流" />
+                <el-option label="组队开黑" value="组队开黑" />
+                <el-option label="吃瓜灌水" value="吃瓜灌水" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="关联游戏" required>
+              <el-select v-model="createForm.gameProject" class="w-full">
+                <el-option label="综合讨论" value="综合" />
+                <el-option label="英雄联盟" value="LOL" />
+                <el-option label="王者荣耀" value="王者荣耀" />
+                <el-option label="CS2" value="CS2" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="帖子正文" required>
+          <div class="editor-container">
+            <Toolbar style="border-bottom: 1px solid #ccc" :editor="editorRef" :mode="mode" />
+            <Editor style="height: 300px; overflow-y: hidden;" v-model="createForm.content" :mode="mode" @onCreated="handleCreated" />
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showPostDialog = false">取消</el-button>
-        <el-button type="primary" @click="handlePublishPost">立即发布</el-button>
+        <el-button @click="createDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitPost">确认发布</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import '@wangeditor/editor/dist/css/style.css'
+import { ref, onMounted, shallowRef, onBeforeUnmount } from 'vue';
+import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
 import { useUserStore } from '../../store/user';
 import request from '../../utils/request';
 import { ElMessage } from 'element-plus';
 
 const userStore = useUserStore();
-const posts = ref([]);
 const loading = ref(false);
-const queryProject = ref('');
-const showPostDialog = ref(false);
+const posts = ref([]);
 
-const postForm = ref({
+// 筛选
+const filterCategory = ref('全部');
+const filterProject = ref('全部');
+
+// 发帖编辑器
+const createDialogVisible = ref(false);
+const editorRef = shallowRef();
+const mode = 'default';
+const createForm = ref({
   title: '',
+  category: '赛事讨论',
+  gameProject: '综合',
   content: '',
-  gameProject: '',
-  userId: userStore.userInfo.id
+  userId: userStore.userInfo.id,
+  nickname: userStore.userInfo.nickname || userStore.userInfo.username,
+  university: userStore.userInfo.university || '未知高校'
 });
+
+const handleCreated = (editor) => { editorRef.value = editor; };
+onBeforeUnmount(() => { if (editorRef.value) editorRef.value.destroy(); });
 
 const fetchPosts = async () => {
   loading.value = true;
   try {
-    const res = await request.get('/community/post/list', { params: { gameProject: queryProject.value } });
-    posts.value = res.data;
+    const params = {};
+    if (filterCategory.value !== '全部') params.category = filterCategory.value;
+    if (filterProject.value !== '全部') params.gameProject = filterProject.value;
+    
+    const res = await request.get('/post/list', { params });
+    posts.value = res.data || [];
   } catch (err) {
     console.error(err);
   } finally {
@@ -107,121 +150,125 @@ const fetchPosts = async () => {
   }
 };
 
-const handlePublishPost = async () => {
-  if (!userStore.token) {
-    ElMessage.warning('请先登录');
-    return;
+const handleCategorySelect = (index) => {
+  filterCategory.value = index;
+  fetchPosts();
+};
+
+const handleCreateClick = () => {
+  if (!userStore.token) return ElMessage.warning('请先登录后发帖');
+  // 重置表单，防止编辑状态遗留
+  createForm.value = {
+    id: null,
+    title: '',
+    category: '赛事讨论',
+    gameProject: '综合',
+    content: ''
+  };
+  createDialogVisible.value = true;
+};
+
+const submitPost = async () => {
+  if (!createForm.value.title || !createForm.value.content || createForm.value.content === '<p><br></p>') {
+    return ElMessage.warning('请填写完整标题和内容');
   }
   try {
-    await request.post('/community/post/publish', postForm.value);
-    ElMessage.success('发布成功');
-    showPostDialog.value = false;
+    const postData = {
+      ...createForm.value,
+      userId: userStore.userInfo.id,
+      nickname: userStore.userInfo.nickname || userStore.userInfo.username,
+      university: userStore.userInfo.university
+    };
+    
+    await request.post('/post/save', postData);
+    ElMessage.success(createForm.value.id ? '更新成功' : '发帖成功');
+    createDialogVisible.value = false;
     fetchPosts();
   } catch (err) {
     console.error(err);
   }
 };
 
-const formatTime = (t) => t?.split('T')[0] || '';
-const truncateContent = (c) => c.length > 80 ? c.substring(0, 80) + '...' : c;
+const goDetail = (id) => {
+  router.push(`/community/${id}`);
+};
+
+const stripHtml = (html) => {
+  let doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.textContent || "";
+};
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return `${date.getMonth()+1}-${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+};
 
 onMounted(fetchPosts);
 </script>
 
 <style scoped>
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
+.community-page { padding: 20px 0; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.page-title { font-size: 28px; font-weight: bold; color: #333; }
 
-.page-title {
-  font-size: 24px;
-  color: #333;
-}
-
-.content-box {
-  background-color: var(--bg-white);
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: var(--shadow-sm);
-}
-
-.post-item {
-  padding: 20px 0;
-  border-bottom: 1px solid #f0f2f5;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.post-item:hover {
-  background-color: #fafafa;
-}
-
-.post-title {
-  font-size: 17px;
-  font-weight: bold;
-  margin-bottom: 10px;
-}
-
-.post-content {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 15px;
-  line-height: 1.6;
-}
-
-.post-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  color: #999;
-}
-
-.meta {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-}
-
-.stats {
+.community-content {
   display: flex;
   gap: 20px;
+  align-items: flex-start;
 }
 
-.stats span {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
 }
 
-.hot-list {
+.filter-card { border-radius: 8px; }
+.filter-title { font-size: 14px; font-weight: bold; color: #999; margin-bottom: 10px; padding-left: 10px; }
+.filter-menu { border-right: none; }
+.filter-menu :deep(.el-menu-item) { height: 40px; line-height: 40px; border-radius: 4px; }
+.filter-menu :deep(.el-menu-item.is-active) { background-color: #f0f7ff; font-weight: bold; }
+.project-radio { display: flex; flex-direction: column; gap: 10px; padding-left: 10px; }
+
+.main-list {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 15px;
 }
 
-.hot-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-}
+.post-card { border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+.post-card:hover { border-color: var(--primary); }
 
-.rank {
-  font-family: serif;
-  font-style: italic;
-  font-weight: bold;
-  color: var(--primary);
-}
+.post-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.meta-tag { margin-right: 8px; }
+.post-time { font-size: 13px; color: #999; }
 
-.hot-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+.post-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #333; }
+.post-summary { font-size: 14px; color: #666; line-height: 1.5; margin-bottom: 15px; }
+
+.post-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f5f5f5; padding-top: 12px; }
+.author-info { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #666; }
+.nickname { font-weight: 500; color: #333; }
+.stats-info { display: flex; gap: 15px; font-size: 13px; color: #999; }
+.stat-item { display: flex; align-items: center; gap: 4px; }
 
 .w-full { width: 100%; }
+.editor-container { border: 1px solid #ccc; width: 100%; }
+
+/* 详情弹窗样式 */
+.post-detail-content { padding: 0 10px; }
+.detail-meta { display: flex; gap: 15px; font-size: 13px; color: #999; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+.detail-meta .author { color: var(--primary); font-weight: bold; }
+.detail-html { line-height: 1.8; color: #333; font-size: 15px; min-height: 100px; margin-bottom: 30px; }
+
+.comment-list { max-height: 300px; overflow-y: auto; margin-bottom: 20px; padding-right: 10px; }
+.comment-item { padding: 12px 0; border-bottom: 1px dashed #eee; }
+.c-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.c-author { font-size: 13px; font-weight: bold; color: #666; }
+.c-time { font-size: 12px; color: #aaa; }
+.c-body { font-size: 14px; color: #333; }
+
+.comment-input-box { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; background: #fafafa; padding: 15px; border-radius: 8px; }
+.send-btn { width: 100px; }
 </style>

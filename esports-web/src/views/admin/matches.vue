@@ -19,19 +19,8 @@
         </el-table-column>
         <el-table-column label="操作">
           <template #default="scope">
-            <el-dropdown trigger="click" @command="(cmd) => handleCommand(scope.row.id, cmd)">
-              <el-button type="primary" size="small">
-                修改状态 <el-icon class="el-icon--right"><arrow-down /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item :command="0">设为待匹配</el-dropdown-item>
-                  <el-dropdown-item :command="1">设为已匹配</el-dropdown-item>
-                  <el-dropdown-item :command="4">设为已结束</el-dropdown-item>
-                  <el-dropdown-item :command="5" divided>设为已拒绝/作废</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+            <el-button type="primary" size="small" @click="editMatch(scope.row)">编辑</el-button>
+            <el-button type="danger" size="small" @click="deleteMatch(scope.row.id)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -59,10 +48,15 @@ const fetchMatches = async () => {
   }
 };
 
-const handleCommand = async (id, status) => {
+const editMatch = (match) => {
+  // 打开编辑对话框
+  ElMessage.warning('编辑功能正在开发中');
+};
+
+const deleteMatch = async (id) => {
   try {
-    await request.post(`/match/admin/status/${id}?status=${status}`);
-    ElMessage.success('状态更新成功');
+    await request.post(`/match-room/cancel/${id}`);
+    ElMessage.success('约战已删除');
     fetchMatches();
   } catch (err) {
     console.error(err);

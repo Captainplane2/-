@@ -52,7 +52,7 @@ public class User {
     private String signature;  // 个性签名
 
     /**
-     * 角色：ROLE_USER (普通用户), ROLE_LEADER (战队队长), ROLE_ADMIN (管理员)
+     * 角色：ROLE_USER (普通用户), ROLE_TEAM_MEMBER (战队队员), ROLE_LEADER (战队队长), ROLE_ADMIN (管理员)
      */
     private String role;
 

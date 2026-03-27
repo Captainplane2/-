@@ -52,14 +52,48 @@ public class TeamController {
     }
 
     /**
+     * 更新战队资料
+     */
+    @PostMapping("/update")
+    public Result<Team> update(@RequestBody Team team) {
+        Team existingTeam = teamRepository.findById(team.getId()).orElse(null);
+        if (existingTeam == null) {
+            return Result.error(404, "战队不存在");
+        }
+        existingTeam.setName(team.getName());
+        existingTeam.setLogo(team.getLogo());
+        existingTeam.setDescription(team.getDescription());
+        
+        Team updated = teamRepository.save(existingTeam);
+        return Result.success("战队资料更新成功", updated);
+    }
+
+    /**
      * 获取战队列表
      */
     @GetMapping("/list")
-    public Result<List<Team>> list(
+    public Result<List<Map<String, Object>>> list(
             @RequestParam(required = false) String university,
             @RequestParam(required = false) String gameProject) {
         List<Team> teams = teamService.listTeams(university, gameProject);
-        return Result.success(teams);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Team team : teams) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", team.getId());
+            map.put("name", team.getName());
+            map.put("logo", team.getLogo());
+            map.put("gameProject", team.getGameProject());
+            map.put("description", team.getDescription());
+            map.put("leaderId", team.getLeaderId());
+            map.put("memberCount", team.getMemberCount());
+            map.put("createTime", team.getCreateTime());
+            // 从队长信息中获取高校
+            userRepository.findById(team.getLeaderId()).ifPresent(user -> {
+                map.put("university", user.getUniversity());
+            });
+            result.add(map);
+        }
+        return Result.success(result);
     }
 
     /**
@@ -84,6 +118,8 @@ public class TeamController {
                 map.put("id", user.getId());
                 map.put("nickname", user.getNickname());
                 map.put("username", user.getUsername());
+                map.put("avatar", user.getAvatar());
+                map.put("university", user.getUniversity());
                 map.put("role", rel.getRole()); // 队内角色
                 map.put("joinTime", rel.getJoinTime());
             });
@@ -114,8 +150,23 @@ public class TeamController {
      * 获取战队申请列表 (队长调用)
      */
     @GetMapping("/applications/{teamId}")
-    public Result<List<TeamApplication>> listApplications(@PathVariable Long teamId) {
-        return Result.success(teamService.listPendingApplications(teamId));
+    public Result<List<Map<String, Object>>> listApplications(@PathVariable Long teamId) {
+        List<TeamApplication> applications = teamService.listPendingApplications(teamId);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (TeamApplication app : applications) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", app.getId());
+            map.put("userId", app.getUserId());
+            map.put("status", app.getStatus());
+            map.put("createTime", app.getCreateTime());
+            // 从用户信息中获取昵称和学校
+            userRepository.findById(app.getUserId()).ifPresent(user -> {
+                map.put("nickname", user.getNickname());
+                map.put("university", user.getUniversity());
+            });
+            result.add(map);
+        }
+        return Result.success(result);
     }
 
     /**
@@ -134,6 +185,28 @@ public class TeamController {
     public Result<String> removeMember(@RequestParam Long teamId, @RequestParam Long userId) {
         teamService.removeMember(teamId, userId);
         return Result.success("成员已移除", null);
+    }
+
+    /**
+     * 获取用户作为队长收到的待处理申请总数
+     */
+    @GetMapping("/pending-count/{userId}")
+    public Result<Integer> getPendingCount(@PathVariable Long userId) {
+        List<Team> myTeams = teamService.listMyTeams(userId);
+        int totalPending = 0;
+        for (Team team : myTeams) {
+            if (team.getLeaderId().equals(userId)) {
+                List<TeamApplication> apps = teamService.listPendingApplications(team.getId());
+                if (apps != null) {
+                    for (TeamApplication app : apps) {
+                        if (app.getStatus() == 0) { // 0: 待审核
+                            totalPending++;
+                        }
+                    }
+                }
+            }
+        }
+        return Result.success(totalPending);
     }
 
     /**
@@ -166,5 +239,32 @@ public class TeamController {
         // 同步删除成员关系
         teamMemberRepository.deleteByTeamId(id);
         return Result.success("战队记录已彻底从数据库删除", null);
+    }
+
+    /**
+     * 队长解散战队
+     */
+    @PostMapping("/dismiss/{teamId}")
+    public Result<String> dismissTeam(@PathVariable Long teamId) {
+        // 1. 标记战队为解散状态
+        Team team = teamRepository.findById(teamId).orElse(null);
+        if (team == null) {
+            return Result.error(404, "战队不存在");
+        }
+        team.setStatus(1); // 1 表示解散状态
+        teamRepository.save(team);
+
+        // 2. 删除所有战队成员关系
+        List<TeamMember> members = teamMemberRepository.findByTeamId(teamId);
+        for (TeamMember member : members) {
+            // 3. 更新成员角色为普通用户
+            userRepository.findById(member.getUserId()).ifPresent(user -> {
+                user.setRole("ROLE_USER");
+                userRepository.save(user);
+            });
+        }
+        teamMemberRepository.deleteByTeamId(teamId);
+
+        return Result.success("战队已成功解散", null);
     }
 }

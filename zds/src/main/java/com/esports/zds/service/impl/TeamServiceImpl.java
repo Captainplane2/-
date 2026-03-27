@@ -46,12 +46,10 @@ public class TeamServiceImpl implements TeamService {
         // 2. 规则校验：一个项目下只能创建一个战队
         List<TeamMember> myRelations = teamMemberRepository.findByUserId(team.getLeaderId());
         for (TeamMember rel : myRelations) {
-            if (rel.getRole() == 1) { // 角色为队长
-                Team existingTeam = teamRepository.findById(rel.getTeamId()).orElse(null);
-                if (existingTeam != null && existingTeam.getStatus() == 0 
-                    && existingTeam.getGameProject().equals(team.getGameProject())) {
-                    throw new RuntimeException("你在 " + team.getGameProject() + " 项目下已经创建过正常运行的战队了");
-                }
+            Team existingTeam = teamRepository.findById(rel.getTeamId()).orElse(null);
+            if (existingTeam != null && existingTeam.getStatus() == 0 
+                && existingTeam.getGameProject().equals(team.getGameProject())) {
+                throw new RuntimeException("你在 " + team.getGameProject() + " 项目下已经加入了战队，不能再创建该项目的战队");
             }
         }
 
@@ -134,15 +132,28 @@ public class TeamServiceImpl implements TeamService {
         applicationRepository.save(app);
 
         if (status == 1) {
+            Team team = teamRepository.findById(app.getTeamId()).orElseThrow();
+            
+            // CS2战队最多5人
+            if ("CS2".equals(team.getGameProject()) && team.getMemberCount() >= 5) {
+                throw new RuntimeException("CS2战队最多5人，该战队已满员");
+            }
+
             TeamMember member = new TeamMember();
             member.setTeamId(app.getTeamId());
             member.setUserId(app.getUserId());
             member.setRole(0);
             teamMemberRepository.save(member);
 
-            Team team = teamRepository.findById(app.getTeamId()).orElseThrow();
             team.setMemberCount(team.getMemberCount() + 1);
             teamRepository.save(team);
+
+            // 更新用户角色为战队成员
+            User user = userRepository.findById(app.getUserId()).orElseThrow();
+            if (!"ROLE_ADMIN".equals(user.getRole()) && !"ROLE_LEADER".equals(user.getRole())) {
+                user.setRole("ROLE_TEAM_MEMBER");
+                userRepository.save(user);
+            }
         }
     }
 
@@ -167,6 +178,17 @@ public class TeamServiceImpl implements TeamService {
         Team team = teamRepository.findById(teamId).orElseThrow();
         team.setMemberCount(Math.max(1, team.getMemberCount() - 1));
         teamRepository.save(team);
+
+        // 检查用户是否还有其他战队成员身份
+        List<TeamMember> remainingMemberships = teamMemberRepository.findByUserId(userId);
+        if (remainingMemberships.isEmpty()) {
+            // 如果没有其他战队，更新用户角色为普通用户
+            User user = userRepository.findById(userId).orElseThrow();
+            if (!"ROLE_ADMIN".equals(user.getRole())) {
+                user.setRole("ROLE_USER");
+                userRepository.save(user);
+            }
+        }
     }
 
     @Override

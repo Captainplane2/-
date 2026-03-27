@@ -1,49 +1,70 @@
 package com.esports.zds.entity;
 
+import jakarta.persistence.*;
+import lombok.Data;
 import java.time.LocalDateTime;
 
-import org.hibernate.annotations.CreationTimestamp;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.Data;
-
 /**
- * 帖子实体类
+ * 社区帖子实体类
  */
 @Data
 @Entity
-@Table(name = "post")
+@Table(name = "t_post")
 public class Post {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 帖子标题
     @Column(nullable = false)
     private String title;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    // 帖子内容 (富文本)
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String content;
 
-    private Long userId; // 发帖人ID
+    // 状态 (0: 正常, 1: 已删除)
+    private Integer status = 0;
 
-    private String gameProject; // 所属游戏项目
+    // 所属板块 (如：赛事讨论、技术交流、组队开黑)
+    private String category;
 
-    private Integer views = 0;   // 浏览量
-    private Integer likes = 0;   // 点赞数
-    private Integer comments = 0; // 评论数
+    // 游戏项目关联
+    private String gameProject;
 
-    @CreationTimestamp
-    @Column(updatable = false)
+    // 作者ID
+    private Long userId;
+
+    // 作者昵称
+    private String nickname;
+
+    // 作者学校
+    private String university;
+
+    // 浏览量 (保持与旧代码一致的 setViews/getViews)
+    private Integer views = 0;
+
+    // 点赞数 (保持与旧代码一致的 setLikes/getLikes)
+    private Integer likes = 0;
+
+    // 评论数 (保持与旧代码一致的 setComments/getComments)
+    private Integer comments = 0;
+
+    // 创建时间
     private LocalDateTime createTime;
 
-    /**
-     * 状态：0 正常, 1 已删除
-     */
-    private Integer status = 0;
+    // 更新时间
+    private LocalDateTime updateTime;
+
+    @PrePersist
+    protected void onCreate() {
+        createTime = LocalDateTime.now();
+        updateTime = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updateTime = LocalDateTime.now();
+    }
 }

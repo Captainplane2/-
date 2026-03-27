@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
@@ -25,8 +26,13 @@ public class WebConfig implements WebMvcConfigurer {
                     "/api/user/register",   // 注册接口放行
                     "/api/notice/list",     // 公告列表放行
                     "/api/notice/*",        // 公告详情放行
+                    "/api/news/list",       // 新闻列表放行
+                    "/api/news/*",         // 新闻详情放行
                     "/api/team/list",       // 战队列表放行
-                    "/api/match/list"       // 约赛列表放行
+                    "/api/team/members/*",  // 战队成员放行
+                    "/api/match-room/list", // 约战列表放行
+                    "/api/banner/active",   // 首页Banner放行
+                    "/api/user/upload"      // 文件上传放行 (便于测试，实际生产应严格控制)
                 );
     }
 
@@ -44,5 +50,12 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedHeaders("*")
                 // 跨域允许时间
                 .maxAge(3600);
+    }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // 配置静态资源映射，让上传的文件可以通过URL访问
+        registry.addResourceHandler("/upload/**")
+                .addResourceLocations("file:" + System.getProperty("user.dir") + "/upload/");
     }
 }

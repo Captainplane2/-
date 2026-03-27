@@ -24,7 +24,7 @@
       </template>
 
       <div v-loading="loading" class="notice-list">
-        <div v-for="item in filteredNotices" :key="item.id" class="notice-row" @click="viewDetail(item.id)">
+        <div v-for="item in filteredNotices" :key="item.id" class="notice-row" @click="$router.push(`/notice/${item.id}`)">
           <div class="notice-info">
             <el-tag v-if="isNew(item.createTime)" type="danger" size="small" effect="dark" class="new-tag">NEW</el-tag>
             <span class="notice-title">{{ item.title }}</span>
@@ -38,46 +38,18 @@
         <el-empty v-if="filteredNotices.length === 0" description="暂无相关公告内容" />
       </div>
     </el-card>
-
-    <!-- 公告详情 (沉浸式弹窗) -->
-    <el-dialog
-      v-model="detailVisible"
-      :title="currentNotice.title"
-      width="760px"
-      class="dark-dialog"
-      destroy-on-close
-    >
-      <div class="notice-content-wrapper">
-        <div class="notice-meta-info">
-          <div class="info-item">
-            <span class="label">发布者:</span>
-            <span class="val">{{ currentNotice.author || '系统管理员' }}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">发布时间:</span>
-            <span class="val">{{ formatDate(currentNotice.createTime) }}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">阅读量:</span>
-            <span class="val">{{ currentNotice.views }}</span>
-          </div>
-        </div>
-        <el-divider class="dark-divider" />
-        <div class="notice-body" v-html="currentNotice.content"></div>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import request from '../../utils/request';
 
+const router = useRouter();
 const notices = ref([]);
 const loading = ref(false);
 const searchQuery = ref('');
-const detailVisible = ref(false);
-const currentNotice = ref({});
 
 const fetchNotices = async () => {
   loading.value = true;
@@ -95,18 +67,6 @@ const filteredNotices = computed(() => {
   if (!searchQuery.value) return notices.value;
   return notices.value.filter(n => n.title.includes(searchQuery.value));
 });
-
-const viewDetail = async (id) => {
-  try {
-    const res = await request.get(`/notice/${id}`);
-    currentNotice.value = res.data;
-    detailVisible.value = true;
-    const target = notices.value.find(n => n.id === id);
-    if (target) target.views++;
-  } catch (err) {
-    console.error(err);
-  }
-};
 
 const formatDate = (d) => d?.split('T')[0] || '';
 

@@ -39,6 +39,7 @@
             <el-icon><Document /></el-icon>
             <span>内容发布</span>
           </template>
+          <el-menu-item index="/admin/news">新闻发布</el-menu-item>
           <el-menu-item index="/admin/notices">公告管理</el-menu-item>
           <el-menu-item index="/admin/messages">留言处理</el-menu-item>
         </el-sub-menu>

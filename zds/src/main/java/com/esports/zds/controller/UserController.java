@@ -1,9 +1,12 @@
 package com.esports.zds.controller;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.esports.zds.common.Result;
 import com.esports.zds.entity.User;
@@ -140,6 +144,17 @@ public class UserController {
     }
 
     /**
+     * [管理端] 修改用户所属高校
+     */
+    @PostMapping("/admin/university/{id}")
+    public Result<String> updateUniversity(@PathVariable Long id, @RequestParam String university) {
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("用户不存在"));
+        user.setUniversity(university);
+        userRepository.save(user);
+        return Result.success("所属高校更新成功", null);
+    }
+
+    /**
      * [管理端] 删除用户
      */
     @PostMapping("/admin/delete/{id}")
@@ -167,5 +182,40 @@ public class UserController {
         user.setPassword(cn.hutool.crypto.digest.DigestUtil.md5Hex(newPassword));
         userRepository.save(user);
         return Result.success("密码修改成功", null);
+    }
+
+    /**
+     * 文件上传接口
+     */
+    @PostMapping("/upload")
+    public Result<String> upload(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new RuntimeException("请选择文件");
+        }
+
+        try {
+            // 确保上传目录存在
+            String uploadPath = System.getProperty("user.dir") + "/upload";
+            File directory = new File(uploadPath);
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
+
+            // 生成唯一文件名
+            String originalFilename = file.getOriginalFilename();
+            String suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String fileName = UUID.randomUUID().toString() + suffix;
+
+            // 保存文件
+            File dest = new File(uploadPath + "/" + fileName);
+            file.transferTo(dest);
+
+            // 返回文件访问路径
+            String fileUrl = "/upload/" + fileName;
+            return Result.success("上传成功", fileUrl);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("上传失败: " + e.getMessage());
+        }
     }
 }

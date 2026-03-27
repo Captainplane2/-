@@ -8,7 +8,7 @@
           <div class="logo-icon">
             <el-icon :size="24"><Trophy /></el-icon>
           </div>
-          <span class="site-name">蘸豆爽！</span>
+          <span class="site-name">{{ config.siteName || '蘸豆爽！' }}</span>
         </div>
 
         <!-- 中间菜单 -->
@@ -20,10 +20,16 @@
             router
           >
             <el-menu-item index="/">首页</el-menu-item>
+            <el-sub-menu :index="currentGameIndex">
+              <template #title>{{ currentGameText }}</template>
+              <el-menu-item index="/cs2">CS2</el-menu-item>
+              <el-menu-item index="/lol">英雄联盟</el-menu-item>
+              <el-menu-item index="/wzry">王者荣耀</el-menu-item>
+            </el-sub-menu>
             <el-menu-item index="/team">战队信息</el-menu-item>
             <el-menu-item index="/user/profile">选手信息</el-menu-item>
-            <el-menu-item index="/match">赛事信息</el-menu-item>
-            <el-menu-item index="/community">竞技交流</el-menu-item>
+            <el-menu-item index="/match">约战大厅</el-menu-item>
+            <el-menu-item index="/community">蘸豆爽吧</el-menu-item>
             <el-menu-item index="/news">电竞新闻</el-menu-item>
             <el-menu-item index="/message">系统留言</el-menu-item>
             <el-menu-item index="/notice">系统公告</el-menu-item>
@@ -53,12 +59,15 @@
 
           <div class="user-actions">
             <template v-if="!userStore.token">
-              <el-button link @click="$router.push('/login')">登录</el-button>
+              <el-button plain @click="$router.push('/login')">登录</el-button>
               <el-button plain @click="$router.push('/register')">注册</el-button>
             </template>
             <el-dropdown v-else @command="handleCommand" trigger="hover">
               <div class="user-profile-trigger">
-                <el-avatar :size="32" :src="userStore.userInfo.avatar" />
+                <!-- 个人中心图标右上角红点 -->
+                <el-badge :value="pendingCount" :hidden="pendingCount === 0" class="badge-item">
+                  <el-avatar :size="32" :src="userStore.userInfo.avatar" />
+                </el-badge>
                 <span class="nickname">{{ userStore.userInfo.nickname || userStore.userInfo.username }}</span>
               </div>
               <template #dropdown>
@@ -68,8 +77,16 @@
                   <!-- 动态栏目：加入战队/创建战队 -->
                   <el-dropdown-item v-if="userStore.userInfo.role === 'ROLE_USER'" command="join-team">加入战队</el-dropdown-item>
                   <el-dropdown-item v-if="userStore.userInfo.role === 'ROLE_LEADER'" command="create-team">创建战队</el-dropdown-item>
-                  <!-- 修改此处为直接跳转到独立管理页面 -->
-                  <el-dropdown-item v-if="userStore.userInfo.role === 'ROLE_LEADER'" command="manage-team">战队管理</el-dropdown-item>
+                  <!-- 战队管理处也显示一样的角标 -->
+                  <el-dropdown-item v-if="userStore.userInfo.role === 'ROLE_LEADER'" command="manage-team">
+                    战队管理
+                    <el-badge v-if="pendingCount > 0" is-dot class="menu-badge" />
+                  </el-dropdown-item>
+                  
+                  <!-- 约战管理 -->
+                  <el-dropdown-item v-if="userStore.userInfo.role === 'ROLE_LEADER'" command="manage-match">
+                    约战管理
+                  </el-dropdown-item>
                   
                   <el-dropdown-item command="password">修改密码</el-dropdown-item>
                   <el-dropdown-item command="admin" v-if="userStore.userInfo.role === 'ROLE_ADMIN'">管理后台</el-dropdown-item>
@@ -92,7 +109,7 @@
 
     <el-footer class="site-footer">
       <div class="footer-content">
-        <p>© 2026 蘸豆爽！电竞约战赛事平台 | 粤ICP备18154309号</p>
+        <p>© 2026 {{ config.siteName || '蘸豆爽！' }} | {{ config.icp || '粤ICP备18154309号' }}</p>
       </div>
     </el-footer>
 
@@ -118,7 +135,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '../store/user';
 import { ElMessage } from 'element-plus';
@@ -128,9 +145,89 @@ const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 
+// 网站配置
+const config = ref({
+  siteName: '蘸豆爽！',
+  icp: '粤ICP备18154309号'
+});
+
 const activeMenu = computed(() => route.path);
 const searchKeyword = ref('');
 const searchType = ref('all');
+
+// 当前游戏名称和索引
+const currentGameText = ref('选择游戏');
+const currentGameIndex = ref('/game');
+
+// 监听路由变化，更新当前游戏名称
+const updateCurrentGame = () => {
+  const path = route.path;
+  if (path.startsWith('/cs2')) {
+    currentGameText.value = 'CS2';
+    currentGameIndex.value = '/cs2';
+  } else if (path.startsWith('/lol')) {
+    currentGameText.value = '英雄联盟';
+    currentGameIndex.value = '/lol';
+  } else if (path.startsWith('/wzry')) {
+    currentGameText.value = '王者荣耀';
+    currentGameIndex.value = '/wzry';
+  } else {
+    currentGameText.value = '选择游戏';
+    currentGameIndex.value = '/game';
+  }
+};
+
+// 消息红点逻辑
+const pendingCount = ref(0);
+let timer = null;
+
+const fetchPendingCount = async () => {
+  // 先判断 token 是否存在
+  if (!userStore.token) {
+    pendingCount.value = 0;
+    return;
+  }
+  try {
+    const res = await request.get(`/team/pending-count/${userStore.userInfo.id}`);
+    pendingCount.value = res.data || 0;
+  } catch (err) {
+    console.error('获取消息数失败', err);
+  }
+};
+
+// 获取网站配置
+const fetchConfig = async () => {
+  try {
+    const res = await request.get('/config/list');
+    res.data.forEach(item => {
+      if (item.configKey in config.value) {
+        config.value[item.configKey] = item.configValue;
+      }
+    });
+  } catch (err) {
+    console.error('获取配置失败', err);
+  }
+};
+
+onMounted(() => {
+  updateCurrentGame();
+  // 监听路由变化
+  router.afterEach(() => {
+    updateCurrentGame();
+  });
+  
+  fetchConfig();
+  fetchPendingCount();
+  // 缩短轮询时间至 10 秒，提高实时性
+  timer = setInterval(fetchPendingCount, 10000);
+  // 监听全局事件，以便在 management.vue 操作后即时刷新
+  window.addEventListener('refresh-pending-count', fetchPendingCount);
+});
+
+onBeforeUnmount(() => {
+  if (timer) clearInterval(timer);
+  window.removeEventListener('refresh-pending-count', fetchPendingCount);
+});
 
 // 修改密码逻辑
 const pwdDialogVisible = ref(false);
@@ -154,6 +251,8 @@ const handleCommand = (command) => {
     pwdDialogVisible.value = true;
   } else if (command === 'manage-team') {
     router.push('/team/manage'); // 修正为跳转到独立的战队管理页面
+  } else if (command === 'manage-match') {
+    router.push('/cs2/match/manage'); // 跳转到约战管理页面
   }
 };
 
@@ -301,6 +400,15 @@ const handleUpdatePassword = async () => {
 .nickname {
   font-size: 14px;
   color: #333;
+}
+
+.badge-item :deep(.el-badge__content) {
+  top: 5px;
+  right: 5px;
+}
+
+.menu-badge {
+  margin-left: 5px;
 }
 
 .main-body {

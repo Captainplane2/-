@@ -1,14 +1,10 @@
 <template>
   <div class="profile-page full-container">
-    <div class="page-header">
-      <h1 class="page-title">选手中心</h1>
-    </div>
-
-    <el-row :gutter="24">
-      <!-- 左侧边栏 -->
-      <el-col :span="6">
-        <el-card class="user-info-card" shadow="never">
-          <div class="user-avatar-box">
+    <el-row :gutter="20">
+      <!-- 左侧导航侧边栏 (对齐示例网站风格) -->
+      <el-col :span="5">
+        <el-card class="sidebar-card" shadow="never">
+          <div class="user-profile-summary">
             <el-upload
               class="avatar-uploader"
               action="http://localhost:8080/api/user/upload"
@@ -16,73 +12,75 @@
               :on-success="handleAvatarSuccess"
               :headers="uploadHeaders"
             >
-              <el-avatar :size="100" :src="userStore.userInfo.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" class="main-avatar" />
-              <div class="avatar-mask">更换头像</div>
+              <el-avatar :size="80" :src="userStore.userInfo.avatar || defaultAvatar" />
+              <div class="avatar-edit-mask">编辑</div>
             </el-upload>
-            <h2 class="nickname">{{ userStore.userInfo.nickname || userStore.userInfo.username }}</h2>
-            
-            <!-- 个性签名展示 -->
-            <p class="signature">{{ userStore.userInfo.signature || '暂无个性签名' }}</p>
-
-            <!-- 多项目战队标签系统 -->
-            <div class="project-tags-container">
-              <div 
-                v-for="p in userProjects" 
-                :key="p.projectName"
-                class="tag-wrapper"
-                @click="toggleTagVisibility(p, $event)"
-              >
-                <el-tag 
-                  :type="p.hidden ? 'info' : getProjectTagType(p.projectName)" 
-                  :class="{ 'is-hidden': p.hidden }"
-                  effect="dark"
-                  size="small"
-                  class="project-status-tag"
-                >
-                  {{ p.projectName }}：{{ p.teamName }} {{ p.role === 1 ? '战队队长' : '战队成员' }}
-                </el-tag>
+            <div class="user-meta">
+              <h3 class="username">{{ userStore.userInfo.nickname || userStore.userInfo.username }}</h3>
+              <div class="tags-container">
+                <p class="university-tag"><el-icon><School /></el-icon> {{ userStore.userInfo.university || '未绑定高校' }}</p>
+                <el-tag v-if="userStore.userInfo.role === 'ROLE_LEADER'" type="danger" effect="dark">战队队长</el-tag>
+                <el-tag v-else-if="userStore.userInfo.role === 'ROLE_TEAM_MEMBER'" type="primary" effect="dark">战队成员</el-tag>
               </div>
             </div>
           </div>
+
           <el-divider />
-          <el-menu :default-active="activeTab" class="profile-menu" @select="handleSelect">
+
+          <el-menu
+            :default-active="activeTab"
+            class="profile-menu"
+            @select="handleSelect"
+          >
             <el-menu-item index="info">
               <el-icon><User /></el-icon>
-              <span>竞技档案</span>
+              <span>个人资料</span>
             </el-menu-item>
             <el-menu-item index="team">
-              <el-icon><Star /></el-icon>
+              <el-icon><Trophy /></el-icon>
               <span>我的战队</span>
             </el-menu-item>
-            <el-menu-item index="match">
-              <el-icon><Calendar /></el-icon>
-              <span>竞技记录</span>
+            <el-menu-item index="post">
+              <el-icon><ChatLineRound /></el-icon>
+              <span>我的帖子</span>
+            </el-menu-item>
+            <el-menu-item index="collection">
+              <el-icon><Star /></el-icon>
+              <span>战队收藏</span>
             </el-menu-item>
             <el-menu-item index="message">
-              <el-icon><ChatDotRound /></el-icon>
-              <span>系统回执</span>
+              <el-icon><Message /></el-icon>
+              <span>系统留言</span>
+            </el-menu-item>
+            <el-menu-item index="password">
+              <el-icon><Lock /></el-icon>
+              <span>修改密码</span>
             </el-menu-item>
           </el-menu>
         </el-card>
       </el-col>
 
-      <!-- 右侧主内容 -->
-      <el-col :span="18">
+      <!-- 右侧内容区 -->
+      <el-col :span="19">
         <el-card class="content-card" shadow="never">
-          <!-- 个人资料编辑 -->
-          <div v-if="activeTab === 'info'">
-            <div class="content-header">
-              <h3 class="title">竞技档案编辑</h3>
-            </div>
-            <el-form :model="editForm" label-width="100px" style="max-width: 600px">
+          <!-- 1. 个人资料 -->
+          <div v-if="activeTab === 'info'" class="tab-content">
+            <div class="section-title">个人信息编辑</div>
+            <el-form :model="editForm" label-width="100px" class="profile-form">
               <el-form-item label="选手账号">
                 <el-input v-model="editForm.username" disabled />
               </el-form-item>
               <el-form-item label="竞技昵称">
-                <el-input v-model="editForm.nickname" />
+                <el-input v-model="editForm.nickname" placeholder="在平台展示的昵称" />
               </el-form-item>
               <el-form-item label="真实姓名">
                 <el-input v-model="editForm.realName" />
+              </el-form-item>
+              <el-form-item label="所属高校">
+                <el-input v-model="editForm.university" disabled />
+              </el-form-item>
+              <el-form-item label="联系QQ">
+                <el-input v-model="editForm.qq" />
               </el-form-item>
               <el-form-item label="选手性别">
                 <el-radio-group v-model="editForm.gender">
@@ -90,103 +88,183 @@
                   <el-radio label="女">女</el-radio>
                 </el-radio-group>
               </el-form-item>
-              <el-form-item label="QQ号">
-                <el-input v-model="editForm.qq" placeholder="方便战队联系" />
-              </el-form-item>
-              <el-form-item label="微信号">
-                <el-input v-model="editForm.wechat" placeholder="方便战队联系" />
-              </el-form-item>
-              <el-form-item label="个性签名">
+              <el-form-item label="竞技宣言">
                 <el-input 
                   v-model="editForm.signature" 
                   type="textarea" 
-                  :rows="2" 
-                  maxlength="20" 
-                  show-word-limit
-                  placeholder="展示你的竞技宣言"
+                  :rows="3" 
+                  maxlength="50" 
+                  show-word-limit 
+                  placeholder="一句话介绍自己..."
                 />
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" size="large" @click="handleUpdateProfile">更新选手档案</el-button>
+                <el-button type="primary" @click="handleUpdateProfile">保存修改</el-button>
               </el-form-item>
             </el-form>
           </div>
 
-          <!-- 我的战队列表 -->
-          <div v-else-if="activeTab === 'team'">
-            <div class="content-header">
-              <h3 class="title">战队归属管理</h3>
-            </div>
-            <el-table :data="myTeams" border stripe v-loading="loading">
+          <!-- 2. 我的战队 -->
+          <div v-else-if="activeTab === 'team'" class="tab-content">
+            <div class="section-title">我的战队归属</div>
+            <el-table :data="myTeams" border stripe v-loading="loading" class="team-table">
               <el-table-column prop="name" label="战队名称" />
               <el-table-column prop="gameProject" label="项目" width="120" />
-              <el-table-column prop="memberCount" label="人数" width="100" />
-              <el-table-column label="角色" width="120">
+              <el-table-column label="我的身份" width="120">
                 <template #default="scope">
                   <el-tag :type="scope.row.leaderId === userStore.userInfo.id ? 'danger' : 'info'">
-                    {{ scope.row.leaderId === userStore.userInfo.id ? '队长' : '成员' }}
+                    {{ scope.row.leaderId === userStore.userInfo.id ? '战队队长' : '正式成员' }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="150" align="right">
+              <el-table-column label="操作" width="180" align="center">
                 <template #default="scope">
-                  <!-- 抽离为独立路由页面后，直接跳转传参 -->
                   <el-button 
                     v-if="scope.row.leaderId === userStore.userInfo.id" 
                     type="primary" 
-                    size="small" 
+                    size="small"
                     @click="$router.push(`/team/manage?teamId=${scope.row.id}`)"
                   >战队管理</el-button>
-                  <el-button v-else link type="primary" @click="$router.push('/team')">进入战队大厅</el-button>
+                  <el-button v-else link type="primary" @click="$router.push('/team')">查看大厅</el-button>
                 </template>
               </el-table-column>
             </el-table>
+            <el-empty v-if="myTeams.length === 0" description="暂未加入任何战队" />
           </div>
 
-          <!-- 系统回执 -->
-          <div v-else-if="activeTab === 'message'">
-            <div class="content-header">
-              <h3 class="title">反馈与建议记录</h3>
-              <el-button type="primary" size="small" @click="showMessageDialog = true">提交新建议</el-button>
+          <!-- 3. 修改密码 -->
+          <div v-else-if="activeTab === 'password'" class="tab-content">
+            <div class="section-title">账户安全设置</div>
+            <el-form :model="pwdForm" label-width="100px" class="profile-form">
+              <el-form-item label="原密码" required>
+                <el-input v-model="pwdForm.oldPassword" type="password" show-password />
+              </el-form-item>
+              <el-form-item label="新密码" required>
+                <el-input v-model="pwdForm.newPassword" type="password" show-password />
+              </el-form-item>
+              <el-form-item label="确认密码" required>
+                <el-input v-model="pwdForm.confirmPassword" type="password" show-password />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="handleUpdatePassword">更新密码</el-button>
+              </el-form-item>
+            </el-form>
+          </div>
+
+          <!-- 4. 系统留言 -->
+          <div v-else-if="activeTab === 'message'" class="tab-content">
+            <div class="header-with-btn">
+              <div class="section-title">系统留言与反馈</div>
+              <el-button type="primary" size="small" @click="showMessageDialog = true">我要留言</el-button>
             </div>
-            <div class="message-feed">
-              <el-card v-for="msg in messages" :key="msg.id" class="msg-card" shadow="never">
-                <div class="m-body">{{ msg.content }}</div>
-                <div class="m-time">{{ msg.createTime }}</div>
-                <div v-if="msg.reply" class="m-reply">
-                  <div class="r-head">官方回复：</div>
-                  <div class="r-body">{{ msg.reply }}</div>
+            <div class="message-list">
+              <el-card v-for="msg in messages" :key="msg.id" shadow="never" class="msg-item-card">
+                <div class="msg-content">{{ msg.content }}</div>
+                <div class="msg-time">{{ formatDate(msg.createTime) }}</div>
+                <div v-if="msg.reply" class="msg-reply">
+                  <span class="reply-label">官方回复：</span>
+                  {{ msg.reply }}
                 </div>
               </el-card>
-              <el-empty v-if="messages.length === 0" description="暂无历史建议记录" />
+              <el-empty v-if="messages.length === 0" description="暂无留言记录" />
             </div>
+          </div>
+
+          <!-- 我的帖子 -->
+          <div v-else-if="activeTab === 'post'" class="tab-content">
+            <div class="header-with-btn">
+              <div class="section-title">我的发帖记录</div>
+              <el-button type="primary" size="small" @click="openPostDialog()">发布新帖</el-button>
+            </div>
+            
+            <div class="post-list" v-loading="loading">
+              <el-card v-for="post in myPosts" :key="post.id" shadow="hover" class="my-post-card">
+                <div class="post-header">
+                  <el-tag size="small" type="info">{{ post.category }}</el-tag>
+                  <el-tag size="small" type="success" effect="dark" style="margin-left: 8px">{{ post.gameProject || '综合' }}</el-tag>
+                  <span class="post-time" style="margin-left: auto; color: #999; font-size: 13px">{{ formatDate(post.createTime) }}</span>
+                </div>
+                <h3 class="post-title" @click="$router.push(`/community/${post.id}`)">{{ post.title }}</h3>
+                <div class="post-actions">
+                  <span class="stats"><el-icon><View /></el-icon> {{ post.views || post.viewCount || 0 }} &nbsp;&nbsp; <el-icon><ChatDotRound /></el-icon> {{ post.comments || post.commentCount || 0 }}</span>
+                  <div>
+                    <el-button type="primary" link @click="openPostDialog(post)">编辑</el-button>
+                    <el-button type="danger" link @click="deletePost(post.id)">删除</el-button>
+                  </div>
+                </div>
+              </el-card>
+              <el-empty v-if="myPosts.length === 0" description="暂无发帖记录" />
+            </div>
+          </div>
+
+          <!-- 其他暂未实现的占位 -->
+          <div v-else class="tab-content">
+            <el-empty description="该模块正在紧急同步中..." />
           </div>
         </el-card>
       </el-col>
     </el-row>
 
+    <!-- 发帖/编辑弹窗 -->
+    <el-dialog v-model="postDialogVisible" :title="postForm.id ? '编辑帖子' : '发布新帖'" width="800px" top="5vh">
+      <el-form :model="postForm" label-width="80px">
+        <el-form-item label="帖子标题" required>
+          <el-input v-model="postForm.title" placeholder="请输入吸引人的标题..." />
+        </el-form-item>
+        <el-row>
+          <el-col :span="12">
+            <el-form-item label="所属板块" required>
+              <el-select v-model="postForm.category" style="width: 100%">
+                <el-option label="赛事讨论" value="赛事讨论" />
+                <el-option label="技术交流" value="技术交流" />
+                <el-option label="组队开黑" value="组队开黑" />
+                <el-option label="吃瓜灌水" value="吃瓜灌水" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="关联游戏" required>
+              <el-select v-model="postForm.gameProject" style="width: 100%">
+                <el-option label="综合讨论" value="综合" />
+                <el-option label="英雄联盟" value="LOL" />
+                <el-option label="王者荣耀" value="王者荣耀" />
+                <el-option label="CS2" value="CS2" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="帖子正文" required>
+          <div style="border: 1px solid #ccc; width: 100%">
+            <Toolbar style="border-bottom: 1px solid #ccc" :editor="editorRef" :mode="'default'" />
+            <Editor style="height: 300px; overflow-y: hidden;" v-model="postForm.content" :mode="'default'" @onCreated="handleCreated" />
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="postDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitPost">确认保存</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 留言弹窗 -->
     <el-dialog v-model="showMessageDialog" title="提交意见建议" width="480px">
-      <el-input v-model="newMessage" type="textarea" :rows="5" placeholder="请详细描述您的问题..." />
+      <el-input v-model="newMessage" type="textarea" :rows="5" placeholder="请详细描述您的问题或建议，我们将尽快回复..." />
       <template #footer>
         <el-button @click="showMessageDialog = false">取消</el-button>
         <el-button type="primary" @click="handleSubmitMessage">确认提交</el-button>
       </template>
     </el-dialog>
-
-    <!-- 隐藏标签提示文字小字 -->
-    <div v-if="tipVisible" class="float-tip" :style="{ top: tipPos.y + 'px', left: tipPos.x + 'px' }">
-      已隐藏
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import '@wangeditor/editor/dist/css/style.css'
+import { ref, onMounted, watch, shallowRef, onBeforeUnmount } from 'vue';
+import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '../../store/user';
 import request from '../../utils/request';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 
 const route = useRoute();
 const router = useRouter();
@@ -194,31 +272,104 @@ const userStore = useUserStore();
 const activeTab = ref('info');
 const myTeams = ref([]);
 const messages = ref([]);
+const myPosts = ref([]);
 const showMessageDialog = ref(false);
 const newMessage = ref('');
 const loading = ref(false);
+const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png';
 
-// 标签交互逻辑
-const tipVisible = ref(false);
-const tipPos = ref({ x: 0, y: 0 });
+// 富文本编辑器相关
+const postDialogVisible = ref(false);
+const editorRef = shallowRef();
+const postForm = ref({
+  id: null,
+  title: '',
+  category: '赛事讨论',
+  gameProject: '综合',
+  content: ''
+});
+
+const handleCreated = (editor) => { editorRef.value = editor; };
+onBeforeUnmount(() => { if (editorRef.value) editorRef.value.destroy(); });
 
 const uploadHeaders = { Authorization: `Bearer ${userStore.token}` };
 const editForm = ref({ ...userStore.userInfo });
-
-// 选手参加的项目关联数据
-const userProjects = ref([]);
+const pwdForm = ref({ oldPassword: '', newPassword: '', confirmPassword: '' });
 
 watch(() => route.query.tab, (newTab) => {
   if (newTab) {
     activeTab.value = newTab;
-    if (newTab === 'team') fetchMyTeams();
+    loadTabData(newTab);
   }
 }, { immediate: true });
 
 const handleSelect = (index) => {
   activeTab.value = index;
-  if (index === 'team') fetchMyTeams();
-  if (index === 'message') fetchMessages();
+  router.push({ path: '/user/profile', query: { tab: index } });
+  loadTabData(index);
+};
+
+const loadTabData = (tab) => {
+  if (tab === 'team') fetchMyTeams();
+  if (tab === 'message') fetchMessages();
+  if (tab === 'post') fetchMyPosts();
+};
+
+const fetchMyPosts = async () => {
+  if (!userStore.userInfo.id) return;
+  loading.value = true;
+  try {
+    const res = await request.get(`/post/my/${userStore.userInfo.id}`);
+    myPosts.value = res.data || [];
+  } catch (err) {
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const openPostDialog = (post = null) => {
+  if (post) {
+    postForm.value = { ...post };
+  } else {
+    postForm.value = {
+      id: null,
+      title: '',
+      category: '赛事讨论',
+      gameProject: '综合',
+      content: ''
+    };
+  }
+  postDialogVisible.value = true;
+};
+
+const submitPost = async () => {
+  if (!postForm.value.title || !postForm.value.content) {
+    return ElMessage.warning('请填写完整标题和内容');
+  }
+  try {
+    const data = {
+      ...postForm.value,
+      userId: userStore.userInfo.id,
+      nickname: userStore.userInfo.nickname || userStore.userInfo.username,
+      university: userStore.userInfo.university
+    };
+    await request.post('/post/save', data);
+    ElMessage.success('保存成功');
+    postDialogVisible.value = false;
+    fetchMyPosts();
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const deletePost = async (id) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这条帖子吗？将连同评论一起删除。', '警告', { type: 'warning' });
+    await request.post(`/post/delete/${id}`);
+    ElMessage.success('删除成功');
+    fetchMyPosts();
+  } catch (e) {}
 };
 
 const fetchMyTeams = async () => {
@@ -227,13 +378,6 @@ const fetchMyTeams = async () => {
   try {
     const res = await request.get(`/team/my/${userStore.userInfo.id}`);
     myTeams.value = res.data || [];
-    // 动态更新头像下的标签数据
-    userProjects.value = myTeams.value.map(t => ({
-      projectName: t.gameProject,
-      teamName: t.name,
-      role: t.leaderId === userStore.userInfo.id ? 1 : 0,
-      hidden: false
-    }));
   } catch (err) { 
     console.error(err); 
   } finally {
@@ -252,29 +396,39 @@ const fetchMessages = async () => {
 const handleUpdateProfile = async () => {
   try {
     await request.post('/user/update', editForm.value);
-    ElMessage.success('档案更新成功');
+    ElMessage.success('个人档案更新成功');
     userStore.setUserInfo({ ...userStore.userInfo, ...editForm.value });
+  } catch (err) { console.error(err); }
+};
+
+const handleUpdatePassword = async () => {
+  if (!pwdForm.value.oldPassword || !pwdForm.value.newPassword) {
+    return ElMessage.warning('请输入完整密码信息');
+  }
+  if (pwdForm.value.newPassword !== pwdForm.value.confirmPassword) {
+    return ElMessage.error('两次输入的新密码不一致');
+  }
+  try {
+    await request.post('/user/password', {
+      userId: userStore.userInfo.id,
+      oldPassword: pwdForm.value.oldPassword,
+      newPassword: pwdForm.value.newPassword
+    });
+    ElMessage.success('密码修改成功，请重新登录');
+    userStore.logout();
+    router.push('/login');
   } catch (err) { console.error(err); }
 };
 
 const handleAvatarSuccess = (res) => {
   if (res.code === 200) {
-    editForm.value.avatar = res.data;
+    // 确保头像路径是完整的URL
+    if (res.data && !res.data.startsWith('http')) {
+      editForm.value.avatar = `http://localhost:8080${res.data}`;
+    } else {
+      editForm.value.avatar = res.data;
+    }
     handleUpdateProfile();
-  }
-};
-
-const getProjectTagType = (project) => {
-  const map = { 'LOL': '', '王者荣耀': 'success', 'CS2': 'warning', '无畏契约': 'danger' };
-  return map[project] || 'info';
-};
-
-const toggleTagVisibility = (project, event) => {
-  project.hidden = !project.hidden;
-  if (project.hidden) {
-    tipPos.value = { x: event.clientX + 10, y: event.clientY - 20 };
-    tipVisible.value = true;
-    setTimeout(() => { tipVisible.value = false; }, 3000);
   }
 };
 
@@ -285,86 +439,218 @@ const handleSubmitMessage = async () => {
       userId: userStore.userInfo.id,
       content: newMessage.value
     });
-    ElMessage.success('提交成功');
+    ElMessage.success('留言提交成功');
     newMessage.value = '';
     showMessageDialog.value = false;
     fetchMessages();
   } catch (err) { console.error(err); }
 };
 
-onMounted(() => {
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+};
+
+const fetchUserInfo = async () => {
+  if (!userStore.userInfo.id) return;
+  try {
+    const res = await request.get(`/user/${userStore.userInfo.id}`);
+    userStore.setUserInfo(res.data);
+    editForm.value = { ...res.data };
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+onMounted(async () => {
   if (!userStore.token) {
     router.push('/login');
     return;
   }
-  fetchMyTeams();
-  if (route.query.tab) activeTab.value = route.query.tab;
-  if (activeTab.value === 'message') fetchMessages();
+  // 先获取最新的用户信息
+  await fetchUserInfo();
+  loadTabData(activeTab.value);
 });
 </script>
 
 <style scoped>
-.page-header { margin-bottom: 24px; }
-.page-title { font-size: 24px; color: #333; }
-
-.user-info-card { text-align: center; border-radius: 12px; padding: 20px 0; }
-.user-avatar-box { position: relative; margin-bottom: 20px; }
-
-.avatar-uploader { display: inline-block; cursor: pointer; position: relative; }
-.avatar-mask {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  border-radius: 50%; background: rgba(0,0,0,0.4);
-  color: #fff; display: flex; align-items: center; justify-content: center;
-  font-size: 12px; opacity: 0; transition: opacity 0.3s;
+.profile-page {
+  padding: 20px 0;
 }
-.avatar-uploader:hover .avatar-mask { opacity: 1; }
 
-.nickname { font-size: 20px; margin: 12px 0 8px; color: #333; }
-.signature { font-size: 13px; color: #999; margin-bottom: 16px; padding: 0 20px; font-style: italic; }
+.sidebar-card {
+  border-radius: 8px;
+  min-height: 600px;
+}
 
-.project-tags-container {
+.user-profile-summary {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   align-items: center;
+  padding: 10px 0;
+}
+
+.avatar-uploader {
+  position: relative;
+  cursor: pointer;
+}
+
+.avatar-edit-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.4);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.avatar-uploader:hover .avatar-edit-mask {
+  opacity: 1;
+}
+
+.user-meta {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.username {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0 0 8px 0;
+  color: #333;
+}
+
+.university-tag {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.profile-menu {
+  border-right: none;
+}
+
+.profile-menu :deep(.el-menu-item) {
+  height: 50px;
+  line-height: 50px;
+}
+
+.profile-menu :deep(.el-menu-item.is-active) {
+  background-color: #f0f7ff;
+  border-right: 3px solid var(--primary);
+}
+
+.content-card {
+  border-radius: 8px;
+  min-height: 600px;
+  padding: 10px;
+}
+
+.tab-content {
+  animation: fadeIn 0.3s;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 30px;
+  color: #333;
+  padding-left: 12px;
+  border-left: 4px solid var(--primary);
+}
+
+.header-with-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.profile-form {
+  max-width: 600px;
+}
+
+.team-table {
   margin-top: 10px;
 }
-.tag-wrapper { cursor: pointer; transition: all 0.3s; width: 90%; }
-.project-status-tag { width: 100%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.project-status-tag.is-hidden { opacity: 0.4; filter: grayscale(1); }
 
-.float-tip {
-  position: fixed;
-  padding: 4px 8px;
-  background: rgba(0,0,0,0.7);
-  color: #fff;
-  border-radius: 4px;
+.msg-item-card {
+  margin-bottom: 15px;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+.msg-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.msg-time {
   font-size: 12px;
-  z-index: 9999;
-  pointer-events: none;
+  color: #999;
+  margin-top: 10px;
 }
 
-.profile-menu { border-right: none; text-align: left; }
-
-.content-card { min-height: 600px; border-radius: 12px; }
-.content-header { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  margin-bottom: 30px; 
-  padding-bottom: 15px; 
-  border-bottom: 1px solid #f0f2f5; 
+.msg-reply {
+  margin-top: 12px;
+  padding: 10px;
+  background-color: #f0f9eb;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #67c23a;
 }
-.title { font-size: 18px; color: #333; margin: 0; }
 
-.msg-feed { display: flex; flex-direction: column; gap: 16px; }
-.msg-card { padding: 20px; background: #fcfcfc; }
-.m-body { font-size: 15px; margin-bottom: 10px; }
-.m-time { font-size: 12px; color: #999; }
-.m-reply { margin-top: 15px; padding: 12px; background: #f0f9eb; border-left: 4px solid #67c23a; border-radius: 4px; }
-.r-head { font-weight: bold; font-size: 13px; color: #67c23a; margin-bottom: 5px; }
-.r-body { font-size: 14px; color: #606266; }
+.reply-label {
+  font-weight: bold;
+}
 
-.w-full { width: 100%; }
-.ml-12 { margin-left: 12px; }
+.my-post-card {
+  margin-bottom: 15px;
+}
+.post-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.post-title {
+  font-size: 16px;
+  color: #333;
+  margin: 0 0 15px 0;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+.post-title:hover {
+  color: var(--primary);
+}
+.post-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #f5f5f5;
+  padding-top: 10px;
+}
+.post-actions .stats {
+  color: #999;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 </style>
