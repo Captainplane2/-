@@ -54,7 +54,7 @@
             <h4 class="members-title">战队成员</h4>
             <div class="member-list">
               <div class="member-item" v-for="member in hostTeamMembers" :key="member.id">
-                <el-avatar :size="32" :src="(member.avatar && member.avatar.startsWith('http')) ? member.avatar : member.avatar ? `http://localhost:8080${member.avatar}` : ''" />
+                <el-avatar :size="32" :src="(member.avatar && member.avatar.startsWith('http')) ? member.avatar : member.avatar ? `http://localhost:8081${member.avatar}` : ''" />
                 <span class="member-name">{{ member.nickname }}</span>
               </div>
             </div>
@@ -87,13 +87,29 @@
             <h4 class="members-title">战队成员</h4>
             <div class="member-list">
               <div class="member-item" v-for="member in guestTeamMembers" :key="member.id">
-                <el-avatar :size="32" :src="(member.avatar && member.avatar.startsWith('http')) ? member.avatar : member.avatar ? `http://localhost:8080${member.avatar}` : ''" />
+                <el-avatar :size="32" :src="(member.avatar && member.avatar.startsWith('http')) ? member.avatar : member.avatar ? `http://localhost:8081${member.avatar}` : ''" />
                 <span class="member-name">{{ member.nickname }}</span>
               </div>
             </div>
           </div>
         </el-card>
       </div>
+
+      <!-- 等待开赛区域 -->
+      <div v-if="room && room.status === 1" class="waiting-start-section">
+        <div class="waiting-card">
+          <span class="waiting-text">等待开赛</span>
+          <span v-if="countdown" class="countdown">{{ countdown }}</span>
+        </div>
+      </div>
+      
+      <!-- 状态管理面板 -->
+      <MatchStatusPanel 
+        :match-id="room.id" 
+        :match-data="room" 
+        v-if="room && room.status === 1" 
+        class="status-panel"
+      />
     </div>
 
     <!-- 应战选择对话框 -->
@@ -119,12 +135,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useGameProjectStore } from '../../../store/gameProject';
 import request from '../../../utils/request';
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '../../../store/user';
+import MatchStatusPanel from '../../../components/MatchStatusPanel.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -142,6 +159,8 @@ const room = ref(null);
 const loading = ref(false);
 const hostTeamMembers = ref([]);
 const guestTeamMembers = ref([]);
+const countdown = ref('');
+let countdownTimer = null;
 
 const joinDialogVisible = ref(false);
 const myTeams = ref([]);
@@ -162,6 +181,47 @@ const fetchTeamMembers = async (teamId, isHost = true) => {
   }
 };
 
+const calculateCountdown = () => {
+  if (!room.value || !room.value.matchTime) return;
+  
+  // 后端存储的是北京时间，直接使用即可
+  const matchDate = new Date(room.value.matchTime);
+  const matchTime = matchDate.getTime();
+  const now = new Date().getTime();
+  const diff = matchTime - now;
+  
+  if (diff <= 0) {
+    countdown.value = '比赛已开始';
+    return;
+  }
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  let result = '';
+  if (days > 0) result += `${days}天 `;
+  if (hours > 0 || days > 0) result += `${hours}小时 `;
+  if (minutes > 0 || hours > 0 || days > 0) result += `${minutes}分 `;
+  result += `${seconds}秒`;
+  
+  countdown.value = result;
+};
+
+const startCountdown = () => {
+  // 清除之前的定时器
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+  }
+  
+  // 立即计算一次
+  calculateCountdown();
+  
+  // 每秒计算一次
+  countdownTimer = setInterval(calculateCountdown, 1000);
+};
+
 const fetchDetail = async () => {
   const id = route.params.id;
   if (!id) return;
@@ -179,6 +239,10 @@ const fetchDetail = async () => {
       // 获取应战方战队成员
       if (r.guestTeamId) {
         await fetchTeamMembers(r.guestTeamId, false);
+      }
+      // 启动倒计时
+      if (r.status === 1) {
+        startCountdown();
       }
     } else {
       ElMessage.error('约战房间不存在');
@@ -199,17 +263,16 @@ const formatDate = (dateStr) => {
   if (!dateStr) return '';
   // 处理后端返回的时间字符串
   const date = new Date(dateStr);
-  const year = date.getUTCFullYear();
-  const month = date.getUTCMonth() + 1;
-  const day = date.getUTCDate();
-  let hours = date.getUTCHours();
-  const minutes = date.getUTCMinutes();
+  // 使用本地时间方法，确保显示用户期望的时间
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
   // 添加上午/下午标识
   const period = hours < 12 ? '上午' : '下午';
-  // 转换为12小时制
-  hours = hours % 12;
-  if (hours === 0) hours = 12;
-  return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')} ${period}${hours}:${String(minutes).padStart(2,'0')}`;
+  // 使用24小时制显示时间
+  return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')} ${period}${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}`;
 };
 
 const fetchMyTeams = async () => {
@@ -259,6 +322,13 @@ const goToTeamDetail = (teamId) => {
 onMounted(() => {
   fetchDetail();
   fetchMyTeams();
+});
+
+onUnmounted(() => {
+  // 清理定时器
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+  }
 });
 </script>
 
@@ -374,5 +444,73 @@ onMounted(() => {
   color: #333;
   flex: 1;
   text-align: left;
+}
+
+/* 等待开赛区域样式 */
+.waiting-start-section {
+  display: flex;
+  justify-content: center;
+  margin: 40px 0;
+}
+
+.waiting-card {
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px 40px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.waiting-card:hover {
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+}
+
+.waiting-text {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.countdown {
+  font-size: 16px;
+  color: #ff6b35;
+  font-weight: bold;
+  background: #fff3cd;
+  padding: 5px 15px;
+  border-radius: 20px;
+  border: 1px solid #ffeaa7;
+  min-width: 120px;
+  text-align: center;
+}
+
+/* 状态管理面板样式 */
+.status-panel {
+  margin: 40px 0;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e8e8e8;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .waiting-card {
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px 30px;
+  }
+  
+  .waiting-text {
+    font-size: 16px;
+  }
+  
+  .countdown {
+    font-size: 14px;
+  }
 }
 </style>

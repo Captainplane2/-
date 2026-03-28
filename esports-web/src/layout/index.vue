@@ -17,9 +17,9 @@
             mode="horizontal"
             :default-active="activeMenu"
             class="site-menu"
-            router
             :trigger="'click'"
             :collapse-transition="false"
+            @select="handleMenuSelect"
           >
             <el-menu-item index="/">首页</el-menu-item>
             <!-- 游戏选择菜单 -->
@@ -29,11 +29,11 @@
                   <span class="game-select-title" @click.stop="goToGameHome">{{ currentGameText }}</span>
                 </div>
               </template>
-              <el-menu-item index="/">全部游戏</el-menu-item>
+              <el-menu-item index="/all-games">全部游戏</el-menu-item>
               <el-menu-item v-for="project in gameProjects" :key="project.name" :index="'/' + project.name">
                 {{ project.displayName }}
               </el-menu-item>
-              <el-menu-item v-if="gameProjects.length === 0" index="/" disabled>
+              <el-menu-item v-if="gameProjects.length === 0" index="/no-games" disabled>
                 暂无游戏板块
               </el-menu-item>
             </el-sub-menu>
@@ -47,27 +47,8 @@
           </el-menu>
         </div>
 
-        <!-- 右侧搜索与用户 -->
+        <!-- 右侧用户 -->
         <div class="header-right">
-          <div class="search-box">
-            <el-input
-              v-model="searchKeyword"
-              placeholder="请输入关键词按Enter搜索"
-              class="nav-search"
-            >
-              <template #prepend>
-                <el-select v-model="searchType" style="width: 80px">
-                  <el-option label="类型" value="all" />
-                  <el-option label="战队" value="team" />
-                  <el-option label="赛事" value="match" />
-                </el-select>
-              </template>
-              <template #append>
-                <el-button icon="Search" />
-              </template>
-            </el-input>
-          </div>
-
           <div class="user-actions">
             <template v-if="!userStore.token">
               <el-button plain @click="$router.push('/login')">登录</el-button>
@@ -99,7 +80,7 @@
                     约战管理
                   </el-dropdown-item>
                   
-                  <el-dropdown-item command="password">修改密码</el-dropdown-item>
+                  <el-dropdown-item command="my-posts">我的帖子</el-dropdown-item>
                   <el-dropdown-item command="admin" v-if="userStore.userInfo.role === 'ROLE_ADMIN'">管理后台</el-dropdown-item>
                   <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
                 </el-dropdown-menu>
@@ -164,9 +145,18 @@ const config = ref({
   icp: '粤ICP备18154309号'
 });
 
-const activeMenu = computed(() => route.path);
-const searchKeyword = ref('');
-const searchType = ref('all');
+const activeMenu = computed(() => {
+  const path = route.path;
+  // 如果是游戏板块相关的路径，返回对应的基础路径
+  if (path.includes('/team')) return teamPath.value;
+  if (path.includes('/user/profile')) return userPath.value;
+  if (path.includes('/match')) return matchPath.value;
+  // 全部游戏路径
+  if (path === '/all-games' || (path === '/' && !gameProjectStore.currentGameProject)) {
+    return '/all-games';
+  }
+  return path;
+});
 
 // 当前游戏名称和索引
 const currentGameText = ref('选择游戏');
@@ -182,7 +172,7 @@ const matchPath = computed(() => {
 });
 
 const userPath = computed(() => {
-  return gameProjectStore.getGameProjectPath('/user/profile');
+  return gameProjectStore.getGameProjectPath('/players');
 });
 
 // 游戏板块列表
@@ -206,6 +196,15 @@ const updateCurrentGame = () => {
   
   if (pathParts.length > 0) {
     const firstPart = pathParts[0];
+    
+    // 检查是否是全部游戏路径
+    if (firstPart === 'all-games') {
+      currentGameText.value = '全部游戏';
+      currentGameIndex.value = '/all-games';
+      gameProjectStore.setCurrentGameProject(null);
+      return;
+    }
+    
     const gameProject = gameProjects.value.find(p => p.name.toUpperCase() === firstPart.toUpperCase());
     
     if (gameProject) {
@@ -214,12 +213,19 @@ const updateCurrentGame = () => {
       currentGameIndex.value = '/' + gameProject.name;
       gameProjectStore.setCurrentGameProject(gameProject.name);
     } else {
-      // 如果路径的第一部分不是游戏板块，保持当前游戏选择不变
-      // 只有当用户明确选择"全部游戏"时才重置
-      // 注意：这里不重置，保持之前的游戏选择
+      // 如果路径的第一部分不是游戏板块，检查是否是首页路径
+      // 在首页路径下，如果当前是"全部游戏"状态，保持该状态
+      if (path === '/' && !gameProjectStore.currentGameProject) {
+        currentGameText.value = '全部游戏';
+        currentGameIndex.value = '/all-games';
+      }
     }
   } else {
-    // 根路径，保持当前游戏选择不变
+    // 根路径，检查是否是"全部游戏"状态
+    if (!gameProjectStore.currentGameProject) {
+      currentGameText.value = '全部游戏';
+      currentGameIndex.value = '/all-games';
+    }
   }
 };
 
@@ -291,6 +297,39 @@ const pwdForm = ref({
   confirmPassword: ''
 });
 
+const handleMenuSelect = (index) => {
+  // 处理游戏选择菜单的子菜单项
+  if (index === '/all-games') {
+    // 全部游戏，跳转到 /all-games 路径
+    gameProjectStore.setCurrentGameProject(null);
+    currentGameText.value = '全部游戏';
+    currentGameIndex.value = '/all-games';
+    router.push('/all-games');
+    return;
+  }
+  
+  // 检查是否是游戏板块路径
+  const gameProject = gameProjects.value.find(p => '/' + p.name === index);
+  if (gameProject) {
+    gameProjectStore.setCurrentGameProject(gameProject.name);
+    currentGameText.value = gameProject.displayName;
+    currentGameIndex.value = '/' + gameProject.name;
+    router.push(index);
+    return;
+  }
+  
+  // 处理其他菜单项
+  if (index === teamPath.value) {
+    router.push(teamPath.value);
+  } else if (index === userPath.value) {
+    router.push(userPath.value);
+  } else if (index === matchPath.value) {
+    router.push(matchPath.value);
+  } else {
+    router.push(index);
+  }
+};
+
 const handleCommand = (command) => {
   if (command === 'logout') {
     userStore.logout();
@@ -307,6 +346,8 @@ const handleCommand = (command) => {
     router.push(gameProjectStore.getGameProjectPath('/team/manage'));
   } else if (command === 'manage-match') {
     router.push(gameProjectStore.getGameProjectPath('/match/manage'));
+  } else if (command === 'my-posts') {
+    router.push('/community/my-posts');
   }
 };
 
@@ -529,14 +570,6 @@ const handleUpdatePassword = async () => {
   align-items: center;
   gap: 20px;
   flex-shrink: 0;
-}
-
-.search-box {
-  width: 320px;
-}
-
-.nav-search :deep(.el-input__wrapper) {
-  border-radius: 4px 0 0 4px;
 }
 
 .user-actions {

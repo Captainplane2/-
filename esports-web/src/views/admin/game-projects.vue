@@ -21,7 +21,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="sortOrder" label="排序" width="100" />
-        <el-table-column label="状态" width="140">
+        <el-table-column label="状态" width="180">
           <template #default="scope">
             <el-switch 
               v-model="scope.row.status" 

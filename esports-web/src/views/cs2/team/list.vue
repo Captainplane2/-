@@ -126,7 +126,7 @@ const fetchTeams = async () => {
     teams.value = res.data.map(team => {
       // 确保logo路径是完整的URL
       if (team.logo && !team.logo.startsWith('http')) {
-        team.logo = `http://localhost:8080${team.logo}`;
+        team.logo = `http://localhost:8081${team.logo}`;
       }
       return team;
     });

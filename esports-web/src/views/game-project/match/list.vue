@@ -293,7 +293,14 @@ const goToMatchDetail = (roomId) => {
 const formatDate = (dateStr) => {
   if (!dateStr) return '';
   const date = new Date(dateStr);
-  return `${date.getMonth()+1}月${date.getDate()}日 ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  // 添加上午/下午标识
+  const period = hours < 12 ? '上午' : '下午';
+  // 使用24小时制显示时间
+  return `${month}月${day}日 ${period}${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}`;
 };
 
 onMounted(() => {

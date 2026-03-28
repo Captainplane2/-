@@ -11,6 +11,11 @@ const routes = [
         component: () => import('../views/home/index.vue')
       },
       {
+        path: 'all-games',
+        name: 'AllGames',
+        component: () => import('../views/home/index.vue')
+      },
+      {
         path: 'team',
         name: 'Team',
         component: () => import('../views/team/list.vue')
@@ -31,6 +36,11 @@ const routes = [
         component: () => import('../views/match/detail.vue')
       },
       {
+        path: 'match/manage',
+        name: 'MatchManage',
+        component: () => import('../views/game-project/match/manage.vue')
+      },
+      {
         path: 'community',
         name: 'Community',
         component: () => import('../views/community/index.vue')
@@ -39,6 +49,11 @@ const routes = [
         path: 'community/:id',
         name: 'CommunityDetail',
         component: () => import('../views/community/detail.vue')
+      },
+      {
+        path: 'community/my-posts',
+        name: 'MyPosts',
+        component: () => import('../views/community/my-posts.vue')
       },
       {
         path: 'notice',
@@ -86,6 +101,11 @@ const routes = [
         component: () => import('../views/user/info.vue')
       },
       {
+        path: 'players',
+        name: 'Players',
+        component: () => import('../views/players/index.vue')
+      },
+      {
         path: ':gameProject',
         name: 'GameProjectHome',
         component: () => import('../views/game-project/index.vue')
@@ -124,6 +144,11 @@ const routes = [
         path: ':gameProject/user/profile',
         name: 'GameProjectUserProfile',
         component: () => import('../views/game-project/user/profile.vue')
+      },
+      {
+        path: ':gameProject/players',
+        name: 'GameProjectPlayers',
+        component: () => import('../views/players/index.vue')
       }
     ]
   },

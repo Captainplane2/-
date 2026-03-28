@@ -41,7 +41,7 @@
               <div class="logo-edit-box">
                 <el-upload
                   class="avatar-uploader"
-                  action="http://localhost:8080/api/user/upload"
+                  action="http://localhost:8081/api/user/upload"
                   :show-file-list="false"
                   :on-success="handleLogoSuccess"
                   :headers="uploadHeaders"
@@ -190,7 +190,7 @@ const fetchTeamInfo = async () => {
     const t = res.data.find(item => item.id == teamId.value);
     if (t) {
       if (t.logo && !t.logo.startsWith('http')) {
-        t.logo = `http://localhost:8080${t.logo}`;
+        t.logo = `http://localhost:8081${t.logo}`;
       }
       teamForm.value = { ...t };
     }
@@ -202,7 +202,7 @@ const fetchTeamInfo = async () => {
 const handleLogoSuccess = (res) => {
   if (res.code === 200) {
     if (res.data && !res.data.startsWith('http')) {
-      teamForm.value.logo = `http://localhost:8080${res.data}`;
+      teamForm.value.logo = `http://localhost:8081${res.data}`;
     } else {
       teamForm.value.logo = res.data;
     }

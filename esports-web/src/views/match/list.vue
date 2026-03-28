@@ -8,6 +8,20 @@
       </el-breadcrumb>
     </div>
 
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+      <el-input
+        v-model="searchKeyword"
+        placeholder="输入约战标题或高校名称..."
+        class="search-input"
+        @keyup.enter="fetchRooms"
+      >
+        <template #append>
+          <el-button @click="fetchRooms" icon="Search" />
+        </template>
+      </el-input>
+    </div>
+
     <div class="match-content">
       <!-- 约战筛选与发起区 -->
       <div class="action-bar">
@@ -66,10 +80,10 @@
                 >立即应战</el-button>
                 <el-button 
                   v-else-if="room.status === 1" 
-                  type="warning" 
+                  :type="isMatchExpired(room.matchTime) ? 'info' : 'warning'" 
                   class="join-btn" 
                   disabled
-                >等待开赛</el-button>
+                >{{ isMatchExpired(room.matchTime) ? '已过期' : '等待开赛' }}</el-button>
               </div>
             </el-card>
           </el-col>
@@ -157,11 +171,13 @@ import { useRouter } from 'vue-router';
 import { useUserStore } from '../../store/user';
 import request from '../../utils/request';
 import { ElMessage } from 'element-plus';
+import { Search, Plus } from '@element-plus/icons-vue';
 
 const router = useRouter();
 const userStore = useUserStore();
 const loading = ref(false);
 const filterProject = ref('全部');
+const searchKeyword = ref('');
 const rooms = ref([]);
 const myTeams = ref([]);
 
@@ -190,7 +206,10 @@ const fetchRooms = async () => {
   loading.value = true;
   try {
     const res = await request.get('/match-room/list', { 
-      params: { gameProject: filterProject.value } 
+      params: { 
+        gameProject: filterProject.value,
+        keyword: searchKeyword.value
+      } 
     });
     rooms.value = res.data || [];
   } catch (err) {
@@ -224,12 +243,40 @@ const onTeamChange = (val) => {
   }
 };
 
+const formatDateTimeLocal = (date) => {
+  if (!date) return '';
+  // el-date-picker 返回的是 UTC 时间的 Date 对象，需要转换为北京时间
+  const d = new Date(date);
+  // 将 UTC 时间转换为北京时间（东八区）
+  const beijingOffset = 8 * 60 * 60 * 1000; // 8小时偏移量
+  const beijingTime = new Date(d.getTime() + beijingOffset);
+  
+  const year = beijingTime.getUTCFullYear();
+  const month = String(beijingTime.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(beijingTime.getUTCDate()).padStart(2, '0');
+  const hours = String(beijingTime.getUTCHours()).padStart(2, '0');
+  const minutes = String(beijingTime.getUTCMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}:00`;
+};
+
 const submitCreateRoom = async () => {
   if (!createForm.value.hostTeamId || !createForm.value.title || !createForm.value.matchTime) {
     return ElMessage.warning('请填写完整信息');
   }
+  
+  // 检查战队与项目是否匹配
+  const selectedTeam = myTeams.value.find(t => t.id === selectedTeamId.value);
+  if (selectedTeam && selectedTeam.gameProject !== createForm.value.gameProject) {
+    return ElMessage.warning('不是该项目的战队');
+  }
+  
   try {
-    await request.post('/match-room/create', createForm.value);
+    // 将时间格式化为无时区的本地时间字符串，避免时区转换问题
+    const submitData = { ...createForm.value };
+    if (submitData.matchTime) {
+      submitData.matchTime = formatDateTimeLocal(submitData.matchTime);
+    }
+    await request.post('/match-room/create', submitData);
     ElMessage.success('约战房间已发布');
     createDialogVisible.value = false;
     fetchRooms();
@@ -248,6 +295,13 @@ const handleJoinClick = (room) => {
 const confirmJoinRoom = async () => {
   if (!selectedJoinTeamId.value) return ElMessage.warning('请选择应战战队');
   const team = myTeams.value.find(t => t.id === selectedJoinTeamId.value);
+  
+  // 检查战队与项目是否匹配
+  const room = rooms.value.find(r => r.id === currentRoomId.value);
+  if (room && team && team.gameProject !== room.gameProject) {
+    return ElMessage.warning('不是该项目的战队');
+  }
+  
   try {
     await request.post(`/match-room/join/${currentRoomId.value}`, null, {
       params: { 
@@ -277,17 +331,22 @@ const formatDate = (dateStr) => {
   if (!dateStr) return '';
   // 处理后端返回的时间字符串 (如: 2026-03-28T14:30:00 或 2026-03-28 14:30:00)
   const date = new Date(dateStr);
-  // 使用UTC方法避免时区转换问题，确保显示与数据库一致的时间
-  const month = date.getUTCMonth() + 1;
-  const day = date.getUTCDate();
-  let hours = date.getUTCHours();
-  const minutes = date.getUTCMinutes();
+  // 直接使用本地时间，确保显示正确的时区
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
   // 添加上午/下午标识
   const period = hours < 12 ? '上午' : '下午';
-  // 转换为12小时制
-  hours = hours % 12;
-  if (hours === 0) hours = 12;
-  return `${month}月${day}日 ${period}${hours}:${String(minutes).padStart(2,'0')}`;
+  // 使用24小时制显示时间
+  return `${month}月${day}日 ${period}${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}`;
+};
+
+const isMatchExpired = (matchTime) => {
+  if (!matchTime) return false;
+  const now = new Date();
+  const matchDate = new Date(matchTime);
+  return now > matchDate;
 };
 
 onMounted(() => {
@@ -298,8 +357,20 @@ onMounted(() => {
 
 <style scoped>
 .match-page { padding: 20px 0; }
-.page-header { margin-bottom: 30px; }
+.page-header { margin-bottom: 20px; }
 .page-title { font-size: 28px; font-weight: bold; color: #333; margin-bottom: 10px; }
+
+.search-bar {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.search-input {
+  width: 100%;
+  max-width: 500px;
+}
 
 .action-bar {
   display: flex;
@@ -310,6 +381,12 @@ onMounted(() => {
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .room-card {

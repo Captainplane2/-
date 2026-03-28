@@ -258,7 +258,15 @@ const getStatusType = (status) => {
 const formatDate = (dateStr) => {
   if (!dateStr) return '';
   const date = new Date(dateStr);
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  // 添加上午/下午标识
+  const period = hours < 12 ? '上午' : '下午';
+  // 使用24小时制显示时间
+  return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')} ${period}${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}`;
 };
 
 onMounted(fetchMatchDetail);

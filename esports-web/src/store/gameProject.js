@@ -39,7 +39,9 @@ export const useGameProjectStore = defineStore('gameProject', {
       if (!this.currentGameProject || this.currentGameProject === 'all') {
         return path;
       }
-      return `/${this.currentGameProject}${path}`;
+      // 移除 path 开头的斜杠，避免生成双斜杠
+      const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+      return `/${this.currentGameProject}/${cleanPath}`;
     }
   }
 });

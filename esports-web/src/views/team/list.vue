@@ -19,8 +19,8 @@
               <el-option label="无畏契约" value="无畏契约" />
             </el-select>
           </el-form-item>
-          <el-form-item label="高校名称">
-            <el-input v-model="queryForm.university" placeholder="输入搜索..." clearable @keyup.enter="fetchTeams" />
+          <el-form-item label="搜索">
+            <el-input v-model="queryForm.keyword" placeholder="输入战队名称或高校名称..." clearable @keyup.enter="fetchTeams" style="width: 240px" />
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="fetchTeams">搜索</el-button>
@@ -105,7 +105,7 @@ const createFormRef = ref(null);
 
 const queryForm = ref({
   gameProject: '',
-  university: ''
+  keyword: ''
 });
 
 const createForm = ref({
@@ -128,11 +128,16 @@ const createRules = {
 const fetchTeams = async () => {
   loading.value = true;
   try {
-    const res = await request.get('/team/list', { params: queryForm.value });
+    const params = {
+      gameProject: queryForm.value.gameProject,
+      name: queryForm.value.keyword,
+      university: queryForm.value.keyword
+    };
+    const res = await request.get('/team/list', { params });
     teams.value = res.data.map(team => {
       // 确保logo路径是完整的URL
       if (team.logo && !team.logo.startsWith('http')) {
-        team.logo = `http://localhost:8080${team.logo}`;
+        team.logo = `http://localhost:8081${team.logo}`;
       }
       return team;
     });

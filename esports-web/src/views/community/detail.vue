@@ -16,7 +16,7 @@
             <h1 class="p-title">{{ post.title }}</h1>
             <div class="p-meta">
               <div class="author-info">
-                <el-avatar :size="32" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
+                <el-avatar :size="32" :src="post.avatar ? (post.avatar.startsWith('http') ? post.avatar : `http://localhost:8081${post.avatar}`) : 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" />
                 <span class="nickname">{{ post.nickname }}</span>
                 <span class="university">· {{ post.university }}</span>
               </div>
@@ -41,7 +41,7 @@
             
             <div class="comment-list">
               <div v-for="c in comments" :key="c.id" class="comment-item">
-                <el-avatar :size="40" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
+                <el-avatar :size="40" :src="c.avatar ? (c.avatar.startsWith('http') ? c.avatar : `http://localhost:8081${c.avatar}`) : 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" />
                 <div class="c-content-box">
                   <div class="c-header">
                     <span class="c-author">{{ c.nickname }}</span>
@@ -74,7 +74,7 @@
         <el-card shadow="never" class="sidebar-card">
           <template #header>关于作者</template>
           <div v-if="post" class="author-sidebar">
-            <el-avatar :size="60" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
+            <el-avatar :size="60" :src="post.avatar ? (post.avatar.startsWith('http') ? post.avatar : `http://localhost:8081${post.avatar}`) : 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" />
             <h3 style="margin: 10px 0 5px">{{ post.nickname }}</h3>
             <p style="margin: 0; color: #666; font-size: 13px">{{ post.university }}</p>
           </div>

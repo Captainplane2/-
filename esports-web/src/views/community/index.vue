@@ -5,6 +5,33 @@
       <el-button type="primary" size="large" icon="EditPen" @click="handleCreateClick">发布新帖</el-button>
     </div>
 
+    <!-- 搜索和排序 -->
+    <div class="search-sort-bar">
+      <div class="search-box">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索帖子标题或内容..."
+          class="search-input"
+          @keyup.enter="fetchPosts"
+        >
+          <template #append>
+            <el-button @click="fetchPosts" icon="Search" />
+          </template>
+        </el-input>
+      </div>
+      <div class="sort-box">
+        <el-select v-model="sortBy" @change="fetchPosts" class="sort-select">
+          <el-option label="最新发布" value="createTime" />
+          <el-option label="热度排序" value="views" />
+          <el-option label="评论最多" value="comments" />
+        </el-select>
+        <el-select v-model="sortOrder" @change="fetchPosts" class="order-select">
+          <el-option label="降序" value="desc" />
+          <el-option label="升序" value="asc" />
+        </el-select>
+      </div>
+    </div>
+
     <div class="community-content">
       <!-- 左侧分类与项目过滤 -->
       <div class="sidebar">
@@ -43,7 +70,7 @@
           
           <div class="post-footer">
             <div class="author-info">
-              <el-avatar :size="24" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
+              <el-avatar :size="24" :src="post.avatar ? (post.avatar.startsWith('http') ? post.avatar : `http://localhost:8081${post.avatar}`) : 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" />
               <span class="nickname">{{ post.nickname }}</span>
               <span class="university">· {{ post.university }}</span>
             </div>
@@ -104,11 +131,13 @@
 <script setup>
 import '@wangeditor/editor/dist/css/style.css'
 import { ref, onMounted, shallowRef, onBeforeUnmount } from 'vue';
+import { useRouter } from 'vue-router';
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
 import { useUserStore } from '../../store/user';
 import request from '../../utils/request';
 import { ElMessage } from 'element-plus';
 
+const router = useRouter();
 const userStore = useUserStore();
 const loading = ref(false);
 const posts = ref([]);
@@ -116,6 +145,9 @@ const posts = ref([]);
 // 筛选
 const filterCategory = ref('全部');
 const filterProject = ref('全部');
+const searchKeyword = ref('');
+const sortBy = ref('createTime');
+const sortOrder = ref('desc');
 
 // 发帖编辑器
 const createDialogVisible = ref(false);
@@ -140,6 +172,9 @@ const fetchPosts = async () => {
     const params = {};
     if (filterCategory.value !== '全部') params.category = filterCategory.value;
     if (filterProject.value !== '全部') params.gameProject = filterProject.value;
+    if (searchKeyword.value) params.keyword = searchKeyword.value;
+    params.sortBy = sortBy.value;
+    params.sortOrder = sortOrder.value;
     
     const res = await request.get('/post/list', { params });
     posts.value = res.data || [];
@@ -211,6 +246,36 @@ onMounted(fetchPosts);
 .community-page { padding: 20px 0; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .page-title { font-size: 28px; font-weight: bold; color: #333; }
+
+.search-sort-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.search-box {
+  flex: 1;
+  max-width: 500px;
+}
+
+.search-input {
+  width: 100%;
+}
+
+.sort-box {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.sort-select,
+.order-select {
+  min-width: 120px;
+}
 
 .community-content {
   display: flex;

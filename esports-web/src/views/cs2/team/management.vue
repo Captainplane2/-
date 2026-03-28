@@ -42,7 +42,7 @@
                 <el-upload
                   ref="logoUploadRef"
                   class="logo-uploader"
-                  action="http://localhost:8080/api/user/upload"
+                  action="http://localhost:8081/api/user/upload"
                   :show-file-list="false"
                   :on-success="handleLogoSuccess"
                   :headers="uploadHeaders"
@@ -183,7 +183,7 @@ const fetchTeamDetail = async () => {
     teamForm.value = res.data;
     // 确保logo路径是完整的URL
     if (teamForm.value.logo && !teamForm.value.logo.startsWith('http')) {
-      teamForm.value.logo = `http://localhost:8080${teamForm.value.logo}`;
+      teamForm.value.logo = `http://localhost:8081${teamForm.value.logo}`;
     }
   } catch (err) {
     console.error(err);
@@ -227,7 +227,7 @@ const triggerLogoUpload = () => {
 const handleLogoSuccess = (res) => {
   if (res.code === 200) {
     if (res.data && !res.data.startsWith('http')) {
-      teamForm.value.logo = `http://localhost:8080${res.data}`;
+      teamForm.value.logo = `http://localhost:8081${res.data}`;
     } else {
       teamForm.value.logo = res.data;
     }

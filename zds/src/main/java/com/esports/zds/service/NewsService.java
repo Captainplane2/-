@@ -30,10 +30,62 @@ public class NewsService {
     }
 
     /**
+     * 获取所有新闻 (支持搜索和排序)
+     */
+    public List<News> listAllNews(String keyword, String sortBy, String sortOrder) {
+        List<News> newsList = newsRepository.findAllByOrderByCreateTimeDesc();
+        return filterAndSortNews(newsList, keyword, sortBy, sortOrder);
+    }
+
+    /**
      * 根据项目获取新闻
      */
     public List<News> listNewsByProject(String gameProject) {
         return newsRepository.findByGameProjectOrderByCreateTimeDesc(gameProject);
+    }
+
+    /**
+     * 根据项目获取新闻 (支持搜索和排序)
+     */
+    public List<News> listNewsByProject(String gameProject, String keyword, String sortBy, String sortOrder) {
+        List<News> newsList = newsRepository.findByGameProjectOrderByCreateTimeDesc(gameProject);
+        return filterAndSortNews(newsList, keyword, sortBy, sortOrder);
+    }
+
+    /**
+     * 过滤和排序新闻
+     */
+    private List<News> filterAndSortNews(List<News> newsList, String keyword, String sortBy, String sortOrder) {
+        // 搜索过滤
+        if (keyword != null && !keyword.isEmpty()) {
+            String lowerKeyword = keyword.toLowerCase();
+            newsList = newsList.stream()
+                .filter(news -> news.getTitle().toLowerCase().contains(lowerKeyword) || 
+                               news.getContent().toLowerCase().contains(lowerKeyword))
+                .collect(java.util.stream.Collectors.toList());
+        }
+        
+        // 排序
+        if (sortBy != null && !sortBy.isEmpty()) {
+            java.util.Comparator<News> comparator;
+            switch (sortBy) {
+                case "viewCount":
+                    comparator = java.util.Comparator.comparingInt(News::getViewCount);
+                    break;
+                case "createTime":
+                default:
+                    comparator = java.util.Comparator.comparing(News::getCreateTime);
+                    break;
+            }
+            
+            if ("desc".equals(sortOrder)) {
+                comparator = comparator.reversed();
+            }
+            
+            newsList.sort(comparator);
+        }
+        
+        return newsList;
     }
 
     /**

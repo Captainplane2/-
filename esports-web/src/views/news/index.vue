@@ -8,6 +8,32 @@
       </el-breadcrumb>
     </div>
 
+    <!-- 搜索和排序 -->
+    <div class="search-sort-bar">
+      <div class="search-box">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索新闻标题或内容..."
+          class="search-input"
+          @keyup.enter="fetchNews"
+        >
+          <template #append>
+            <el-button @click="fetchNews" icon="Search" />
+          </template>
+        </el-input>
+      </div>
+      <div class="sort-box">
+        <el-select v-model="sortBy" @change="fetchNews" class="sort-select">
+          <el-option label="最新发布" value="createTime" />
+          <el-option label="热度排序" value="viewCount" />
+        </el-select>
+        <el-select v-model="sortOrder" @change="fetchNews" class="order-select">
+          <el-option label="降序" value="desc" />
+          <el-option label="升序" value="asc" />
+        </el-select>
+      </div>
+    </div>
+
     <div class="news-content">
       <!-- 游戏分类 Tab -->
       <el-tabs v-model="activeCategory" @tab-change="fetchNews" class="category-tabs">
@@ -55,13 +81,21 @@ import request from '../../utils/request';
 const activeCategory = ref('综合');
 const newsList = ref([]);
 const loading = ref(false);
+const searchKeyword = ref('');
+const sortBy = ref('createTime');
+const sortOrder = ref('desc');
 
 const fetchNews = async () => {
   loading.value = true;
   try {
-    const res = await request.get('/news/list', {
-      params: { gameProject: activeCategory.value === '综合' ? '' : activeCategory.value }
-    });
+    const params = {
+      gameProject: activeCategory.value === '综合' ? '' : activeCategory.value
+    };
+    if (searchKeyword.value) params.keyword = searchKeyword.value;
+    params.sortBy = sortBy.value;
+    params.sortOrder = sortOrder.value;
+    
+    const res = await request.get('/news/list', { params });
     newsList.value = res.data || [];
   } catch (err) {
     console.error(err);
@@ -89,6 +123,36 @@ onMounted(fetchNews);
 .news-page { padding: 20px 0; }
 .page-header { margin-bottom: 20px; }
 .page-title { font-size: 28px; font-weight: bold; color: #333; margin-bottom: 10px; }
+
+.search-sort-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.search-box {
+  flex: 1;
+  max-width: 500px;
+}
+
+.search-input {
+  width: 100%;
+}
+
+.sort-box {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.sort-select,
+.order-select {
+  min-width: 120px;
+}
 
 .news-content {
   background: var(--bg-white);

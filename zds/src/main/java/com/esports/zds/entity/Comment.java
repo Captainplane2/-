@@ -28,6 +28,9 @@ public class Comment {
 
     // 评论者昵称
     private String nickname;
+    
+    // 评论者头像
+    private String avatar;
 
     // 创建时间
     private LocalDateTime createTime;

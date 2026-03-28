@@ -62,6 +62,7 @@ public class TeamServiceImpl implements TeamService {
         member.setTeamId(savedTeam.getId());
         member.setUserId(team.getLeaderId());
         member.setRole(1); // 1 为队长
+        member.setGameProject(team.getGameProject());
         teamMemberRepository.save(member);
 
         // 5. 自动升级身份为 ROLE_LEADER
@@ -75,7 +76,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    public List<Team> listTeams(String university, String gameProject) {
+    public List<Team> listTeams(String university, String gameProject, String name) {
         // 修复点：仅显示正常状态(status=0)的战队
         List<Team> all;
         if (university != null && !university.isEmpty()) {
@@ -85,6 +86,15 @@ public class TeamServiceImpl implements TeamService {
         } else {
             all = teamRepository.findAll();
         }
+        
+        // 过滤战队名称
+        if (name != null && !name.isEmpty()) {
+            String lowerName = name.toLowerCase();
+            all = all.stream()
+                .filter(t -> t.getName().toLowerCase().contains(lowerName))
+                .collect(java.util.stream.Collectors.toList());
+        }
+        
         return all.stream().filter(t -> t.getStatus() == 0).toList();
     }
 
@@ -143,6 +153,7 @@ public class TeamServiceImpl implements TeamService {
             member.setTeamId(app.getTeamId());
             member.setUserId(app.getUserId());
             member.setRole(0);
+            member.setGameProject(team.getGameProject());
             teamMemberRepository.save(member);
 
             team.setMemberCount(team.getMemberCount() + 1);

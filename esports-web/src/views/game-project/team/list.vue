@@ -151,7 +151,7 @@ const fetchTeams = async () => {
     const res = await request.get('/team/list', { params });
     teams.value = res.data.map(team => {
       if (team.logo && !team.logo.startsWith('http')) {
-        team.logo = `http://localhost:8080${team.logo}`;
+        team.logo = `http://localhost:8081${team.logo}`;
       }
       return team;
     });

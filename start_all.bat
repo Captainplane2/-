@@ -18,7 +18,7 @@ start "Frontend - esports-web" cmd /k "cd esports-web && npm run dev"
 
 echo ==========================================
 echo   服务已在独立窗口中启动！
-echo   后端地址: http://localhost:8080
+echo   后端地址: http://localhost:8081
 echo   前端地址: http://localhost:5173
 echo   控制台地址: http://localhost:5173/admin
 echo ==========================================

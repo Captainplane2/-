@@ -74,8 +74,9 @@ public class TeamController {
     @GetMapping("/list")
     public Result<List<Map<String, Object>>> list(
             @RequestParam(required = false) String university,
-            @RequestParam(required = false) String gameProject) {
-        List<Team> teams = teamService.listTeams(university, gameProject);
+            @RequestParam(required = false) String gameProject,
+            @RequestParam(required = false) String name) {
+        List<Team> teams = teamService.listTeams(university, gameProject, name);
         List<Map<String, Object>> result = new ArrayList<>();
         for (Team team : teams) {
             Map<String, Object> map = new HashMap<>();

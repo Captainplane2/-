@@ -32,16 +32,33 @@ public class PostController {
      */
     @GetMapping("/list")
     public Result<List<Post>> listPosts(@RequestParam(required = false) String category,
-                                      @RequestParam(required = false) String gameProject) {
-        return Result.success(postService.listPosts(category, gameProject));
+                                      @RequestParam(required = false) String gameProject,
+                                      @RequestParam(required = false) String keyword,
+                                      @RequestParam(required = false, defaultValue = "createTime") String sortBy,
+                                      @RequestParam(required = false, defaultValue = "desc") String sortOrder) {
+        return Result.success(postService.listPosts(category, gameProject, keyword, sortBy, sortOrder));
     }
 
     /**
      * 获取我的帖子
      */
-    @GetMapping("/my/{userId}")
-    public Result<List<Post>> listMyPosts(@PathVariable Long userId) {
-        return Result.success(postService.listUserPosts(userId));
+    @GetMapping("/my")
+    public Result<java.util.Map<String, Object>> listMyPosts(
+            @RequestParam Long userId,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false, defaultValue = "createTime") String sortBy,
+            @RequestParam(required = false, defaultValue = "desc") String sortOrder,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "10") Integer pageSize) {
+        return Result.success(postService.listUserPosts(userId, status, sortBy, sortOrder, page, pageSize));
+    }
+
+    /**
+     * 发布帖子
+     */
+    @PostMapping("/publish/{id}")
+    public Result<Post> publishPost(@PathVariable Long id) {
+        return Result.success("帖子发布成功", postService.publishPost(id));
     }
 
     /**

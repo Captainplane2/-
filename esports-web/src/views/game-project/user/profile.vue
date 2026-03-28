@@ -7,7 +7,7 @@
           <div class="user-profile-summary">
             <el-upload
               class="avatar-uploader"
-              action="http://localhost:8080/api/user/upload"
+              action="http://localhost:8081/api/user/upload"
               :show-file-list="false"
               :on-success="handleAvatarSuccess"
               :headers="uploadHeaders"
@@ -19,8 +19,8 @@
               <h3 class="username">{{ userStore.userInfo.nickname || userStore.userInfo.username }}</h3>
               <div class="tags-container">
                 <p class="university-tag"><el-icon><School /></el-icon> {{ userStore.userInfo.university || '未绑定高校' }}</p>
-                <el-tag v-if="userStore.userInfo.role === 'ROLE_LEADER'" type="danger" effect="dark">战队队长</el-tag>
-                <el-tag v-else-if="userStore.userInfo.role === 'ROLE_TEAM_MEMBER'" type="primary" effect="dark">战队成员</el-tag>
+                <el-tag v-if="currentIdentity === '战队队长'" type="danger" effect="dark">{{ currentIdentity }}</el-tag>
+                <el-tag v-else-if="currentIdentity === '战队成员'" type="primary" effect="dark">{{ currentIdentity }}</el-tag>
               </div>
             </div>
           </div>
@@ -67,7 +67,11 @@
         </div>
 
         <el-card shadow="never" class="content-card">
-          <component :is="activeComponent" />
+          <div v-if="loadingComponent" class="loading-container">
+            <el-spinner :size="40" />
+            <p class="loading-text">加载中...</p>
+          </div>
+          <component v-else :is="activeComponent" />
         </el-card>
       </el-col>
     </el-row>
@@ -79,7 +83,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '../../../store/user';
 import { useGameProjectStore } from '../../../store/gameProject';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElSpinner } from 'element-plus';
 import { User, Trophy, ChatLineRound, Star, Lock, School } from '@element-plus/icons-vue';
 
 const route = useRoute();
@@ -94,6 +98,16 @@ const gameProjectDisplayName = computed(() => {
   const project = gameProjectStore.getGameProjectByName(gameProject.value);
   return project ? project.displayName : gameProject.value;
 });
+
+// 当前游戏板块的用户身份
+const currentIdentity = ref(null);
+
+// 获取用户在当前游戏板块的身份
+const fetchCurrentIdentity = async () => {
+  if (gameProject.value) {
+    currentIdentity.value = await userStore.getIdentityInGameProject(gameProject.value);
+  }
+};
 
 // 头像上传
 const defaultAvatar = 'https://via.placeholder.com/150/ccc/999?text=头像';
@@ -115,6 +129,7 @@ const handleAvatarSuccess = (response, file) => {
 // 标签页管理
 const activeTab = ref('info');
 const activeComponent = ref(null);
+const loadingComponent = ref(false);
 
 const handleSelect = (key) => {
   activeTab.value = key;
@@ -122,41 +137,71 @@ const handleSelect = (key) => {
 };
 
 const loadComponent = (tab) => {
+  loadingComponent.value = true;
   switch (tab) {
     case 'info':
       import('./info.vue').then(module => {
         activeComponent.value = module.default;
+      }).catch(error => {
+        console.error('加载info组件失败:', error);
+      }).finally(() => {
+        loadingComponent.value = false;
       });
       break;
     case 'team':
       import('./team.vue').then(module => {
         activeComponent.value = module.default;
+      }).catch(error => {
+        console.error('加载team组件失败:', error);
+      }).finally(() => {
+        loadingComponent.value = false;
       });
       break;
     case 'post':
       import('./post.vue').then(module => {
         activeComponent.value = module.default;
+      }).catch(error => {
+        console.error('加载post组件失败:', error);
+      }).finally(() => {
+        loadingComponent.value = false;
       });
       break;
     case 'collection':
       import('./collection.vue').then(module => {
         activeComponent.value = module.default;
+      }).catch(error => {
+        console.error('加载collection组件失败:', error);
+      }).finally(() => {
+        loadingComponent.value = false;
       });
       break;
     case 'password':
       import('./password.vue').then(module => {
         activeComponent.value = module.default;
+      }).catch(error => {
+        console.error('加载password组件失败:', error);
+      }).finally(() => {
+        loadingComponent.value = false;
       });
       break;
   }
 };
 
-onMounted(() => {
+// 组件挂载时获取用户身份
+onMounted(async () => {
   if (!userStore.token) {
     router.push('/login');
     return;
   }
   loadComponent(activeTab.value);
+  await fetchCurrentIdentity();
+});
+
+// 监听游戏板块变化，重新获取身份
+watch(gameProject, async (newGameProject) => {
+  if (newGameProject) {
+    await fetchCurrentIdentity();
+  }
 });
 </script>
 
@@ -257,6 +302,21 @@ onMounted(() => {
 .content-card {
   border-radius: 8px;
   min-height: 600px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 16px;
+}
+
+.loading-text {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
 }
 
 /* 响应式调整 */

@@ -41,6 +41,9 @@ public class Post {
 
     // 作者学校
     private String university;
+    
+    // 作者头像
+    private String avatar;
 
     // 浏览量 (保持与旧代码一致的 setViews/getViews)
     private Integer views = 0;

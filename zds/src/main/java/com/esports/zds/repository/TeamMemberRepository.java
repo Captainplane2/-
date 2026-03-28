@@ -1,39 +1,52 @@
 package com.esports.zds.repository;
 
-import java.util.List;
-
+import com.esports.zds.entity.TeamMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-import com.esports.zds.entity.TeamMember;
+import java.util.List;
+import java.util.Optional;
 
-/**
- * 战队成员数据访问接口
- */
-@Repository
 public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
-    
-    /**
-     * 根据战队ID查询成员列表
-     */
-    List<TeamMember> findByTeamId(Long teamId);
 
     /**
-     * 根据用户ID查询其加入的战队关系
+     * 根据用户ID和游戏项目查询战队成员关系
+     */
+    List<TeamMember> findByUserIdAndGameProject(Long userId, String gameProject);
+
+    /**
+     * 根据用户ID查询所有战队成员关系
      */
     List<TeamMember> findByUserId(Long userId);
 
     /**
-     * 检查用户是否已在战队中
+     * 根据战队ID和用户ID查询战队成员关系
+     */
+    Optional<TeamMember> findByTeamIdAndUserId(Long teamId, Long userId);
+
+    /**
+     * 根据战队ID查询所有战队成员关系
+     */
+    List<TeamMember> findByTeamId(Long teamId);
+
+    /**
+     * 检查战队ID和用户ID是否存在
      */
     boolean existsByTeamIdAndUserId(Long teamId, Long userId);
 
     /**
-     * 根据战队ID删除所有成员关系
+     * 根据战队ID和用户ID删除战队成员关系
      */
     @Modifying
-    @Transactional
-    void deleteByTeamId(Long teamId);
+    @Query("DELETE FROM TeamMember tm WHERE tm.teamId = :teamId AND tm.userId = :userId")
+    void deleteByTeamIdAndUserId(@Param("teamId") Long teamId, @Param("userId") Long userId);
+
+    /**
+     * 根据战队ID删除所有战队成员关系
+     */
+    @Modifying
+    @Query("DELETE FROM TeamMember tm WHERE tm.teamId = :teamId")
+    void deleteByTeamId(@Param("teamId") Long teamId);
 }

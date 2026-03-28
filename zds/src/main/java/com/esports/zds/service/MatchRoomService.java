@@ -34,7 +34,7 @@ public class MatchRoomService {
     /**
      * 获取约战大厅列表
      */
-    public List<MatchRoom> listRooms(String gameProject) {
+    public List<MatchRoom> listRooms(String gameProject, String keyword) {
         List<MatchRoom> rooms;
         // 获取状态为0（招募中）和1（已应战）的约战
         List<Integer> activeStatuses = List.of(0, 1);
@@ -77,6 +77,28 @@ public class MatchRoomService {
                     }
                 }
             }
+        }
+        
+        // 按关键词搜索
+        if (keyword != null && !keyword.isEmpty()) {
+            String lowerKeyword = keyword.toLowerCase();
+            rooms = rooms.stream()
+                .filter(room -> {
+                    // 按约战标题搜索
+                    if (room.getTitle() != null && room.getTitle().toLowerCase().contains(lowerKeyword)) {
+                        return true;
+                    }
+                    // 按发起方高校名称搜索
+                    if (room.getHostUniversity() != null && room.getHostUniversity().toLowerCase().contains(lowerKeyword)) {
+                        return true;
+                    }
+                    // 按应战方高校名称搜索
+                    if (room.getGuestUniversity() != null && room.getGuestUniversity().toLowerCase().contains(lowerKeyword)) {
+                        return true;
+                    }
+                    return false;
+                })
+                .collect(java.util.stream.Collectors.toList());
         }
         
         return rooms;
@@ -156,17 +178,41 @@ public class MatchRoomService {
     }
 
     /**
-     * 取消约战 (由发起人操作)
+     * 取消约战 (由发起人操作或管理员操作)
      */
-    public MatchRoom cancelRoom(Long roomId, Long userId) {
+    public MatchRoom cancelRoom(Long roomId, Long userId, String userRole) {
         MatchRoom room = matchRoomRepository.findById(roomId).orElseThrow(() -> new RuntimeException("房间不存在"));
-        if (!room.getHostId().equals(userId)) {
+        // 检查权限：管理员或发起人
+        if (!"ROLE_ADMIN".equals(userRole) && !room.getHostId().equals(userId)) {
             throw new RuntimeException("只有发起人可以取消约战");
         }
-        if (room.getStatus() != 0) {
+        // 管理员可以取消任何状态的约战，普通用户只能取消招募中的约战
+        if (!"ROLE_ADMIN".equals(userRole) && room.getStatus() != 0) {
             throw new RuntimeException("该房间已被应战或关闭，无法取消");
         }
         room.setStatus(3); // 已取消
         return matchRoomRepository.save(room);
+    }
+
+    /**
+     * 更新约战信息
+     */
+    public MatchRoom updateRoom(MatchRoom room) {
+        MatchRoom existingRoom = matchRoomRepository.findById(room.getId()).orElseThrow(() -> new RuntimeException("房间不存在"));
+        // 更新字段
+        existingRoom.setGameProject(room.getGameProject());
+        existingRoom.setTitle(room.getTitle());
+        existingRoom.setType(room.getType());
+        existingRoom.setMatchTime(room.getMatchTime());
+        existingRoom.setLocation(room.getLocation());
+        existingRoom.setDescription(room.getDescription());
+        return matchRoomRepository.save(existingRoom);
+    }
+
+    /**
+     * [管理端] 删除约战记录
+     */
+    public void deleteRoom(Long roomId) {
+        matchRoomRepository.deleteById(roomId);
     }
 }

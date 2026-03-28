@@ -36,4 +36,9 @@ public class TeamMember {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime joinTime;
+    
+    /**
+     * 游戏项目 (LOL, 王者荣耀, CS2等)
+     */
+    private String gameProject;
 }

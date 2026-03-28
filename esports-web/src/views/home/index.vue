@@ -21,7 +21,7 @@
       <el-card class="notice-card" shadow="never">
         <template #header>
           <div class="card-header">
-            <span class="title">新闻与公告</span>
+            <span class="title">新闻公告</span>
             <el-button type="primary" link @click="$router.push('/news')">更多</el-button>
           </div>
         </template>
@@ -139,8 +139,8 @@ const router = useRouter();
 const loading = ref(false);
 
 const bannerList = ref([
-  { image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80', title: '2026年高校电竞春季巅峰赛' },
-  { image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80', title: '全服集结：寻找最强校园战队' }
+  { image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80', title: '蘸豆，爽！高校电竞约战平台现已开放！' },
+  { image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80', title: '立刻加入立刻爽！' }
 ]);
 
 const mixedNews = ref([]);
@@ -181,7 +181,7 @@ const fetchData = async () => {
     teamList.value = (teamRes.data || []).slice(0, 4).map(team => {
       // 确保logo路径是完整的URL
       if (team.logo && !team.logo.startsWith('http')) {
-        team.logo = `http://localhost:8080${team.logo}`;
+        team.logo = `http://localhost:8081${team.logo}`;
       }
       return team;
     });
@@ -216,17 +216,15 @@ const formatDate = (dateStr) => {
   if (!dateStr) return '';
   // 处理后端返回的时间字符串 (如: 2026-03-28T14:30:00 或 2026-03-28 14:30:00)
   const date = new Date(dateStr);
-  // 使用UTC方法避免时区转换问题，确保显示与数据库一致的时间
-  const month = date.getUTCMonth() + 1;
-  const day = date.getUTCDate();
-  let hours = date.getUTCHours();
-  const minutes = date.getUTCMinutes();
+  // 使用本地时间方法，确保显示用户期望的时间
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
   // 添加上午/下午标识
   const period = hours < 12 ? '上午' : '下午';
-  // 转换为12小时制
-  hours = hours % 12;
-  if (hours === 0) hours = 12;
-  return `${month}月${day}日 ${period}${hours}:${String(minutes).padStart(2,'0')}`;
+  // 使用24小时制显示时间
+  return `${month}月${day}日 ${period}${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}`;
 };
 
 const goToMatchDetail = (roomId, gameProject) => {

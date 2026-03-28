@@ -18,7 +18,7 @@ public interface TeamService {
     /**
      * 获取战队列表
      */
-    List<Team> listTeams(String university, String gameProject);
+    List<Team> listTeams(String university, String gameProject, String name);
 
     /**
      * 获取战队详情

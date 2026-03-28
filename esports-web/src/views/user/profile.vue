@@ -7,7 +7,7 @@
           <div class="user-profile-summary">
             <el-upload
               class="avatar-uploader"
-              action="http://localhost:8080/api/user/upload"
+              action="http://localhost:8081/api/user/upload"
               :show-file-list="false"
               :on-success="handleAvatarSuccess"
               :headers="uploadHeaders"
@@ -19,8 +19,14 @@
               <h3 class="username">{{ userStore.userInfo.nickname || userStore.userInfo.username }}</h3>
               <div class="tags-container">
                 <p class="university-tag"><el-icon><School /></el-icon> {{ userStore.userInfo.university || '未绑定高校' }}</p>
-                <el-tag v-if="userStore.userInfo.role === 'ROLE_LEADER'" type="danger" effect="dark">战队队长</el-tag>
-                <el-tag v-else-if="userStore.userInfo.role === 'ROLE_TEAM_MEMBER'" type="primary" effect="dark">战队成员</el-tag>
+                <el-tag 
+                  v-for="(identity, gameProject) in userIdentities" 
+                  :key="gameProject"
+                  :type="identity === '战队队长' ? 'danger' : 'primary'"
+                  effect="dark"
+                >
+                  {{ identity }}：{{ gameProject }}
+                </el-tag>
               </div>
             </div>
           </div>
@@ -278,6 +284,14 @@ const newMessage = ref('');
 const loading = ref(false);
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png';
 
+// 用户在所有游戏板块的身份
+const userIdentities = ref({});
+
+// 获取用户在所有游戏板块的身份
+const fetchAllIdentities = async () => {
+  userIdentities.value = await userStore.getAllIdentities();
+};
+
 // 富文本编辑器相关
 const postDialogVisible = ref(false);
 const editorRef = shallowRef();
@@ -424,7 +438,7 @@ const handleAvatarSuccess = (res) => {
   if (res.code === 200) {
     // 确保头像路径是完整的URL
     if (res.data && !res.data.startsWith('http')) {
-      editForm.value.avatar = `http://localhost:8080${res.data}`;
+      editForm.value.avatar = `http://localhost:8081${res.data}`;
     } else {
       editForm.value.avatar = res.data;
     }
@@ -470,6 +484,7 @@ onMounted(async () => {
   }
   // 先获取最新的用户信息
   await fetchUserInfo();
+  await fetchAllIdentities();
   loadTabData(activeTab.value);
 });
 </script>
@@ -527,6 +542,15 @@ onMounted(async () => {
   font-weight: bold;
   margin: 0 0 8px 0;
   color: #333;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.tags-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 .university-tag {
@@ -536,6 +560,9 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 4px;
+  justify-content: center;
+  width: 100%;
+  max-width: 200px;
 }
 
 .profile-menu {

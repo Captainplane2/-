@@ -32,12 +32,15 @@ public class NewsController {
      * @param gameProject 可选，按游戏项目筛选
      */
     @GetMapping("/list")
-    public Result<List<News>> listNews(@RequestParam(required = false) String gameProject) {
+    public Result<List<News>> listNews(@RequestParam(required = false) String gameProject,
+                                     @RequestParam(required = false) String keyword,
+                                     @RequestParam(required = false, defaultValue = "createTime") String sortBy,
+                                     @RequestParam(required = false, defaultValue = "desc") String sortOrder) {
         List<News> list;
         if (gameProject != null && !gameProject.isEmpty() && !"全部".equals(gameProject)) {
-            list = newsService.listNewsByProject(gameProject);
+            list = newsService.listNewsByProject(gameProject, keyword, sortBy, sortOrder);
         } else {
-            list = newsService.listAllNews();
+            list = newsService.listAllNews(keyword, sortBy, sortOrder);
         }
         return Result.success(list);
     }

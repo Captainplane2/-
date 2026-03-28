@@ -3,6 +3,7 @@ package com.esports.zds.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 约战房间实体类
@@ -76,6 +77,29 @@ public class MatchRoom {
 
     // 创建时间
     private LocalDateTime createTime;
+
+    // === 状态管理相关字段 ===
+    
+    // 约战状态 (使用枚举)
+    @Enumerated(EnumType.STRING)
+    private MatchStatus matchStatus = MatchStatus.WAITING;
+    
+    // 准备状态
+    private Boolean hostTeamReady = false;
+    private Boolean guestTeamReady = false;
+    
+    // 结束确认计数
+    private Integer finishConfirmCount = 0;
+    
+    // 倒计时相关
+    private LocalDateTime countdownStartTime;
+    private Integer countdownSeconds;
+    
+    // 比赛开始时间（实际开赛时间）
+    private LocalDateTime actualStartTime;
+    
+    // 比赛结束时间
+    private LocalDateTime actualEndTime;
 
     @PrePersist
     protected void onCreate() {

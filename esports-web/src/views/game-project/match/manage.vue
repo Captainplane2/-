@@ -24,7 +24,7 @@
           <el-table :data="myMatches" border stripe v-loading="loading">
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="title" label="约战标题" />
-            <el-table-column prop="gameProject" label="项目" width="120" />
+            <el-table-column prop="gameProject" label="项目"/>
             <el-table-column prop="matchTime" label="开赛时间" width="180" />
             <el-table-column label="状态" width="120">
               <template #default="scope">
@@ -142,7 +142,7 @@ const goToMatchDetail = (matchId) => {
 
 const cancelMatch = async (matchId) => {
   try {
-    await request.post(`/match-room/finish/${matchId}`, null, { 
+    await request.post(`/match-room/cancel/${matchId}`, null, { 
       params: { userId: userStore.userInfo.id }
     });
     ElMessage.success('约战已取消');

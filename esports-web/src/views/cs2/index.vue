@@ -179,7 +179,7 @@ const fetchData = async () => {
     // 提取前4个战队
     topTeams.value = (teamRes.data || []).slice(0, 4).map(team => {
       if (team.logo && !team.logo.startsWith('http')) {
-        team.logo = `http://localhost:8080${team.logo}`;
+        team.logo = `http://localhost:8081${team.logo}`;
       }
       return team;
     });

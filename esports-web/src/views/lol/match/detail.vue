@@ -48,7 +48,7 @@
         <!-- 发起方 -->
         <el-card shadow="hover" class="team-card host-team" @click="$router.push(`/lol/team/${room.hostTeamId}`)">
           <div class="team-role">发起方</div>
-          <el-avatar :size="80" :src="(room.hostTeamLogo && room.hostTeamLogo.startsWith('http')) ? room.hostTeamLogo : room.hostTeamLogo ? `http://localhost:8080${room.hostTeamLogo}` : 'https://via.placeholder.com/150/ff4d4f/ffffff?text=HOST'" />
+          <el-avatar :size="80" :src="(room.hostTeamLogo && room.hostTeamLogo.startsWith('http')) ? room.hostTeamLogo : room.hostTeamLogo ? `http://localhost:8081${room.hostTeamLogo}` : 'https://via.placeholder.com/150/ff4d4f/ffffff?text=HOST'" />
           <h2 class="team-name">{{ room.hostTeamName }}</h2>
           <p class="team-uni"><el-icon><School /></el-icon> {{ hostLeaderUniversity }}</p>
           <div class="host-badge">队长: {{ room.hostLeaderNickname || room.hostId }}</div>
@@ -61,7 +61,7 @@
         <!-- 应战方 -->
         <el-card v-if="room.guestTeamId" shadow="hover" class="team-card guest-team" @click="$router.push(`/lol/team/${room.guestTeamId}`)">
           <div class="team-role">应战方</div>
-          <el-avatar :size="80" :src="(room.guestTeamLogo && room.guestTeamLogo.startsWith('http')) ? room.guestTeamLogo : room.guestTeamLogo ? `http://localhost:8080${room.guestTeamLogo}` : 'https://via.placeholder.com/150/1890ff/ffffff?text=GUEST'" />
+          <el-avatar :size="80" :src="(room.guestTeamLogo && room.guestTeamLogo.startsWith('http')) ? room.guestTeamLogo : room.guestTeamLogo ? `http://localhost:8081${room.guestTeamLogo}` : 'https://via.placeholder.com/150/1890ff/ffffff?text=GUEST'" />
           <h2 class="team-name">{{ room.guestTeamName }}</h2>
           <p class="team-uni"><el-icon><School /></el-icon> {{ guestLeaderUniversity }}</p>
           <div class="guest-badge">队长: {{ room.guestLeaderNickname || room.guestId }}</div>
@@ -216,7 +216,15 @@ const getStatusText = (status) => {
 const formatDate = (dateStr) => {
   if (!dateStr) return '';
   const date = new Date(dateStr);
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  // 添加上午/下午标识
+  const period = hours < 12 ? '上午' : '下午';
+  // 使用24小时制显示时间
+  return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')} ${period}${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}`;
 };
 
 onMounted(() => {
