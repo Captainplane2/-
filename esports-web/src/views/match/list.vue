@@ -79,6 +79,18 @@
                   @click.stop="handleJoinClick(room)"
                 >立即应战</el-button>
                 <el-button 
+                  v-else-if="room.matchStatus === 'IN_PROGRESS'" 
+                  type="danger" 
+                  class="join-btn" 
+                  disabled
+                >比赛进行中</el-button>
+                <el-button 
+                  v-else-if="room.matchStatus === 'FINISHED'" 
+                  type="info" 
+                  class="join-btn" 
+                  disabled
+                >比赛结束</el-button>
+                <el-button 
                   v-else-if="room.status === 1" 
                   :type="isMatchExpired(room.matchTime) ? 'info' : 'warning'" 
                   class="join-btn" 

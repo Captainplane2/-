@@ -11,7 +11,7 @@
     <div v-loading="loading">
       <el-card v-if="room" shadow="never" class="match-header-card">
         <div class="m-status-banner" :class="'status-' + room.status">
-          {{ getStatusText(room.status) }}
+          {{ getStatusText(room.status, room.matchStatus, room.matchTime) }}
         </div>
         
         <div class="m-content">
@@ -207,9 +207,33 @@ const fetchDetail = async () => {
   }
 };
 
-const getStatusText = (status) => {
+const getStatusText = (status, matchStatus, matchTime) => {
+  // 首先检查比赛状态
+  if (matchStatus === 'IN_PROGRESS') {
+    return '比赛进行中';
+  } else if (matchStatus === 'FINISHED') {
+    return '比赛结束';
+  }
+  
+  // 检查是否过期
+  if (isMatchExpired(matchTime)) {
+    return '已过期';
+  }
+  
+  // 其他状态
   const map = { 0: '招募中', 1: '已应战', 2: '已结束', 3: '已取消' };
   return map[status] || '未知';
+};
+
+const isMatchExpired = (matchTime) => {
+  if (!matchTime) return false;
+  
+  const matchDate = new Date(matchTime);
+  const now = new Date();
+  const timeDiff = now - matchDate;
+  const thirtyMinutes = 30 * 60 * 1000;
+  
+  return timeDiff > thirtyMinutes;
 };
 
 const formatDate = (dateStr) => {

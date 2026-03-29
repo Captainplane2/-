@@ -2,6 +2,7 @@ package com.esports.zds.repository;
 
 import com.esports.zds.entity.MatchStatusHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -20,4 +21,11 @@ public interface MatchStatusHistoryRepository extends JpaRepository<MatchStatusH
      */
     @Query("SELECT h FROM MatchStatusHistory h WHERE h.matchRoom.id = :matchId AND h.toStatus = :status ORDER BY h.changeTime DESC LIMIT 1")
     MatchStatusHistory findLatestByMatchIdAndStatus(@Param("matchId") Long matchId, @Param("status") String status);
+    
+    /**
+     * 根据约战ID删除状态变更历史记录
+     */
+    @Modifying
+    @Query("DELETE FROM MatchStatusHistory h WHERE h.matchRoom.id = :matchRoomId")
+    void deleteByMatchRoomId(@Param("matchRoomId") Long matchRoomId);
 }

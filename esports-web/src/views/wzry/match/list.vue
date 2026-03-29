@@ -47,7 +47,7 @@
               <div class="match-info">
                 <div class="match-header">
                   <h3 class="match-title">{{ room.title }}</h3>
-                  <el-tag :type="getStatusType(room.status)">{{ getStatusText(room.status) }}</el-tag>
+                  <el-tag :type="getStatusType(room.status, room.matchStatus)">{{ getStatusText(room.status, room.matchStatus, room.matchTime) }}</el-tag>
                 </div>
                 <div class="match-meta">
                   <el-tag size="small">{{ room.gameProject }}</el-tag>
@@ -248,13 +248,34 @@ const goToMatchDetail = (roomId) => {
   router.push(`/wzry/match/${roomId}`);
 };
 
-const getStatusText = (status) => {
+const getStatusText = (status, matchStatus, matchTime) => {
+  // 首先检查比赛状态
+  if (matchStatus === 'IN_PROGRESS') {
+    return '比赛进行中';
+  } else if (matchStatus === 'FINISHED') {
+    return '比赛结束';
+  }
+  
+  // 检查是否过期
+  if (isMatchExpired(matchTime)) {
+    return '已过期';
+  }
+  
+  // 其他状态
   const map = { 0: '招募中', 1: '已应战', 2: '已结束', 3: '已取消' };
   return map[status] || '未知';
 };
 
-const getStatusType = (status) => {
-  const map = { 0: 'success', 1: 'warning', 2: 'info', 3: 'danger' };
+const getStatusType = (status, matchStatus) => {
+  // 首先检查比赛状态
+  if (matchStatus === 'IN_PROGRESS') {
+    return 'danger'; // 红色
+  } else if (matchStatus === 'FINISHED') {
+    return 'info'; // 灰色（与已过期一致）
+  }
+  
+  // 其他状态
+  const map = { 0: 'info', 1: 'warning', 2: 'success', 3: 'danger' };
   return map[status] || 'info';
 };
 

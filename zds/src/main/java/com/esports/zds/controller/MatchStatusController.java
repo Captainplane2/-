@@ -34,6 +34,9 @@ public class MatchStatusController {
             status.put("countdownSeconds", room.getCountdownSeconds());
             // 添加比赛状态，用于同步比赛是否已开始
             status.put("matchStatus", room.getMatchStatus());
+            // 添加比赛结束确认状态，用于双方同步
+            status.put("hostFinishConfirm", room.getHostFinishConfirm());
+            status.put("guestFinishConfirm", room.getGuestFinishConfirm());
             return Result.success(status);
         } catch (RuntimeException e) {
             return Result.error(400, e.getMessage());
@@ -69,9 +72,24 @@ public class MatchStatusController {
     }
     
     /**
-     * 确认比赛结束
+     * 比赛结束确认
      */
     @PostMapping("/finish-confirm/{matchId}")
+    public Result<MatchRoom> toggleFinishConfirm(@PathVariable Long matchId, 
+                                               @RequestParam Long userId,
+                                               @RequestParam String teamType) {
+        try {
+            MatchRoom room = matchStatusService.toggleFinishConfirm(matchId, userId, teamType);
+            return Result.success("确认状态已更新", room);
+        } catch (RuntimeException e) {
+            return Result.error(400, e.getMessage());
+        }
+    }
+    
+    /**
+     * 确认比赛结束
+     */
+    @PostMapping("/finish/{matchId}")
     public Result<MatchRoom> confirmFinish(@PathVariable Long matchId, 
                                          @RequestParam Long userId) {
         try {
@@ -85,7 +103,7 @@ public class MatchStatusController {
     /**
      * 完成比赛（结束倒计时结束后自动调用）
      */
-    @PostMapping("/finish/{matchId}")
+    @PostMapping("/complete/{matchId}")
     public Result<MatchRoom> finishMatch(@PathVariable Long matchId) {
         try {
             MatchRoom room = matchStatusService.finishMatch(matchId);

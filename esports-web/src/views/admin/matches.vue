@@ -24,12 +24,12 @@
         </el-table-column>
         <el-table-column label="状态" width="120">
           <template #default="scope">
-            <el-tag :type="getStatusType(scope.row.status)">{{ getStatusText(scope.row.status) }}</el-tag>
+            <el-tag :type="getStatusType(scope.row.status, scope.row.matchStatus)">{{ getStatusText(scope.row.status, scope.row.matchStatus, scope.row.matchTime) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作">
           <template #default="scope">
-            <el-button type="primary" size="small" @click="editMatch(scope.row)">编辑</el-button>
+            <el-button type="primary" size="small" :disabled="scope.row.matchStatus === 'IN_PROGRESS'" @click="editMatch(scope.row)">编辑</el-button>
             <el-popconfirm
               title="确定要删除该约赛记录吗？"
               @confirm="deleteMatch(scope.row.id)"
@@ -87,7 +87,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import request from '../../utils/request';
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '../../store/user';
@@ -108,6 +108,9 @@ const form = ref({
   description: ''
 });
 
+let pollingTimer = null;
+const POLLING_INTERVAL = 5000; // 5秒轮询一次
+
 const fetchMatches = async () => {
   loading.value = true;
   try {
@@ -118,6 +121,26 @@ const fetchMatches = async () => {
     ElMessage.error('获取约赛记录失败');
   } finally {
     loading.value = false;
+  }
+};
+
+const startPolling = () => {
+  if (pollingTimer) {
+    clearInterval(pollingTimer);
+  }
+  pollingTimer = setInterval(fetchMatches, POLLING_INTERVAL);
+};
+
+const stopPolling = () => {
+  if (pollingTimer) {
+    clearInterval(pollingTimer);
+    pollingTimer = null;
+  }
+};
+
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    fetchMatches();
   }
 };
 
@@ -171,7 +194,8 @@ const submitForm = async () => {
       ElMessage.success('约赛已添加');
     }
     dialogVisible.value = false;
-    fetchMatches();
+    // 立即刷新数据
+    await fetchMatches();
   } catch (err) {
     console.error(err);
     ElMessage.error('操作失败');
@@ -183,22 +207,54 @@ const deleteMatch = async (id) => {
     // 使用管理端删除接口，真正从数据库删除记录
     await request.post(`/match-room/admin/delete/${id}`);
     ElMessage.success('约赛已删除');
-    // 从本地列表中移除被删除的约战记录
-    matches.value = matches.value.filter(match => match.id !== id);
+    // 立即刷新数据
+    await fetchMatches();
   } catch (err) {
     console.error(err);
     ElMessage.error('删除失败');
   }
 };
 
-const getStatusText = (status) => {
+const getStatusText = (status, matchStatus, matchTime) => {
+  // 首先检查比赛状态
+  if (matchStatus === 'IN_PROGRESS') {
+    return '比赛进行中';
+  } else if (matchStatus === 'FINISHED') {
+    return '比赛结束';
+  }
+  
+  // 检查是否过期
+  if (isMatchExpired(matchTime)) {
+    return '已过期';
+  }
+  
+  // 其他状态
   const map = { 0: '招募中', 1: '已应战', 2: '已结束', 3: '已取消' };
   return map[status] || '未知';
 };
 
-const getStatusType = (status) => {
+const getStatusType = (status, matchStatus) => {
+  // 首先检查比赛状态
+  if (matchStatus === 'IN_PROGRESS') {
+    return 'danger'; // 红色
+  } else if (matchStatus === 'FINISHED') {
+    return 'info'; // 灰色（与已过期一致）
+  }
+  
+  // 其他状态
   const map = { 0: 'info', 1: 'warning', 2: 'success', 3: 'danger' };
   return map[status] || 'info';
+};
+
+const isMatchExpired = (matchTime) => {
+  if (!matchTime) return false;
+  
+  const matchDate = new Date(matchTime);
+  const now = new Date();
+  const timeDiff = now - matchDate;
+  const thirtyMinutes = 30 * 60 * 1000;
+  
+  return timeDiff > thirtyMinutes;
 };
 
 const formatDate = (dateStr) => {
@@ -242,7 +298,18 @@ const parseDateTimeForPicker = (dateStr) => {
   return localTime;
 };
 
-onMounted(fetchMatches);
+onMounted(() => {
+  fetchMatches();
+  startPolling();
+  // 监听页面可见性变化
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+});
+
+onUnmounted(() => {
+  stopPolling();
+  // 移除页面可见性监听
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
+});
 </script>
 
 <style scoped>

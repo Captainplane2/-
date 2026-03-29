@@ -88,6 +88,10 @@ public class MatchRoom {
     private Boolean hostTeamReady = false;
     private Boolean guestTeamReady = false;
     
+    // 结束确认状态
+    private Boolean hostFinishConfirm = false;
+    private Boolean guestFinishConfirm = false;
+    
     // 结束确认计数
     private Integer finishConfirmCount = 0;
     

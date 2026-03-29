@@ -133,6 +133,50 @@ public class MatchStatusService {
     }
     
     /**
+     * 比赛结束确认（双方队长确认）
+     */
+    @Transactional
+    public MatchRoom toggleFinishConfirm(Long matchId, Long userId, String teamType) {
+        MatchRoom room = getMatchRoom(matchId);
+        
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
+        // 权限检查：必须是队长
+        if (!isTeamLeader(room, user, teamType)) {
+            throw new RuntimeException("只有队长可以操作比赛结束确认");
+        }
+        
+        // 状态检查：必须是正在比赛状态
+        if (room.getMatchStatus() != MatchStatus.IN_PROGRESS) {
+            throw new RuntimeException("当前状态不允许操作");
+        }
+        
+        // 更新确认状态
+        boolean newConfirmState;
+        if ("host".equals(teamType)) {
+            newConfirmState = !room.getHostFinishConfirm();
+            room.setHostFinishConfirm(newConfirmState);
+        } else {
+            newConfirmState = !room.getGuestFinishConfirm();
+            room.setGuestFinishConfirm(newConfirmState);
+        }
+        
+        // 记录状态变更
+        String action = newConfirmState ? "确认结束" : "取消确认结束";
+        recordStatusChange(room, room.getMatchStatus(), room.getMatchStatus(), userId, 
+            teamType + "战队" + action);
+        
+        // 如果双方都确认结束，更新比赛状态为已结束
+        if (room.getHostFinishConfirm() && room.getGuestFinishConfirm()) {
+            updateMatchStatus(room, MatchStatus.FINISHED, userId, "双方确认比赛结束");
+            room.setActualEndTime(LocalDateTime.now());
+        }
+        
+        return matchRoomRepository.save(room);
+    }
+    
+    /**
      * 确认比赛结束
      */
     @Transactional

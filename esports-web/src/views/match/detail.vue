@@ -11,7 +11,7 @@
     <div v-loading="loading">
       <el-card v-if="room" shadow="never" class="match-header-card">
         <div class="m-status-banner" :class="'status-' + room.status">
-          {{ getStatusText(room.status) }}
+          {{ getStatusText(room.status, room.matchStatus, room.matchTime) }}
         </div>
         
         <div class="m-content">
@@ -136,18 +136,38 @@
             type="danger"
             size="large"
             class="start-match-btn"
-            :disabled="!canStartMatch || isMatchInProgress"
+            :disabled="!canStartMatch || isMatchInProgress || isMatchFinished"
             @click="startMatch"
           >
             <div class="btn-content">
               <div class="btn-main">
-                {{ isMatchInProgress ? '比赛进行中' : `开始比赛 ${readyCount}/2` }}
+                {{ isMatchFinished ? '比赛结束' : (isMatchInProgress ? '比赛进行中' : `开始比赛 ${readyCount}/2`) }}
               </div>
-              <div v-if="showStartCountdown && !isMatchInProgress" class="btn-sub">
+              <div v-if="showStartCountdown && !isMatchInProgress && !isMatchFinished" class="btn-sub">
                 准备开赛 倒计时{{ startCountdown }}s
               </div>
             </div>
           </el-button>
+          
+          <!-- 比赛结束确认按钮 -->
+          <div v-if="isMatchInProgress && !isMatchFinished" class="finish-confirm-box">
+            <el-button
+              type="primary"
+              size="large"
+              class="start-match-btn"
+              :disabled="!isHostLeader && !isGuestLeader"
+              @click="toggleFinishConfirm"
+            >
+              <div class="btn-content">
+                <div v-if="!showFinishConfirm" class="btn-main">
+                  比赛结束？{{ finishConfirmCount }}/2
+                </div>
+                <div v-else class="btn-main">
+                  比赛结束，房间即将关闭 {{ finishCountdown }}s
+                </div>
+              </div>
+            </el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -210,6 +230,15 @@ let startCountdownTimer = null;
 
 // 比赛是否正在进行中
 const isMatchInProgress = ref(false);
+
+// 比赛结束确认相关
+const hostFinishConfirm = ref(false);
+const guestFinishConfirm = ref(false);
+const showFinishConfirm = ref(false);
+const finishConfirmCount = ref(0);
+const finishCountdown = ref(15);
+let finishCountdownTimer = null;
+const isMatchFinished = ref(false);
 
 // 轮询定时器
 let pollingTimer = null;
@@ -334,10 +363,48 @@ const fetchReadyStatus = async () => {
       if (res.data.matchStatus === 'IN_PROGRESS') {
         // 比赛正在进行中
         isMatchInProgress.value = true;
+        isMatchFinished.value = false;
         showStartCountdown.value = false;
         if (startCountdownTimer) {
           clearInterval(startCountdownTimer);
           startCountdownTimer = null;
+        }
+        
+        // 同步比赛结束确认状态
+        if (res.data.hostFinishConfirm !== undefined) {
+          hostFinishConfirm.value = res.data.hostFinishConfirm;
+        }
+        if (res.data.guestFinishConfirm !== undefined) {
+          guestFinishConfirm.value = res.data.guestFinishConfirm;
+        }
+        
+        // 计算确认数量
+        finishConfirmCount.value = (hostFinishConfirm.value ? 1 : 0) + (guestFinishConfirm.value ? 1 : 0);
+        
+        // 如果双方都确认结束，启动倒计时
+        if (finishConfirmCount.value === 2 && !showFinishConfirm.value) {
+          showFinishConfirm.value = true;
+          startFinishCountdown();
+        } else if (finishConfirmCount.value < 2 && showFinishConfirm.value) {
+          showFinishConfirm.value = false;
+          if (finishCountdownTimer) {
+            clearInterval(finishCountdownTimer);
+            finishCountdownTimer = null;
+          }
+        }
+      } else if (res.data.matchStatus === 'FINISHED') {
+        // 比赛已结束
+        isMatchInProgress.value = false;
+        isMatchFinished.value = true;
+        showStartCountdown.value = false;
+        showFinishConfirm.value = false;
+        if (startCountdownTimer) {
+          clearInterval(startCountdownTimer);
+          startCountdownTimer = null;
+        }
+        if (finishCountdownTimer) {
+          clearInterval(finishCountdownTimer);
+          finishCountdownTimer = null;
         }
       } else {
         // 同步倒计时信息（从后端获取）
@@ -559,9 +626,79 @@ const startMatch = async () => {
   }
 };
 
-const getStatusText = (status) => {
+// 切换比赛结束确认状态
+const toggleFinishConfirm = async () => {
+  if (!isHostLeader.value && !isGuestLeader.value) {
+    ElMessage.warning('只有队长可以操作比赛结束确认');
+    return;
+  }
+  
+  try {
+    const id = route.params.id;
+    const teamType = isHostLeader.value ? 'host' : 'guest';
+    
+    const response = await request.post(`/match-status/finish-confirm/${id}`, null, {
+      params: {
+        userId: Number(userStore.userInfo.id),
+        teamType: teamType
+      }
+    });
+    
+    if (response.code === 200) {
+      // 刷新状态
+      await fetchReadyStatus();
+    }
+  } catch (error) {
+    console.error('比赛结束确认失败:', error);
+    ElMessage.error(error.message || '比赛结束确认失败');
+  }
+};
+
+// 启动比赛结束倒计时
+const startFinishCountdown = () => {
+  if (finishCountdownTimer) clearInterval(finishCountdownTimer);
+  
+  finishCountdown.value = 15;
+  finishCountdownTimer = setInterval(() => {
+    if (finishCountdown.value > 0) {
+      finishCountdown.value--;
+    } else {
+      // 倒计时结束，比赛结束
+      clearInterval(finishCountdownTimer);
+      finishCountdownTimer = null;
+      isMatchFinished.value = true;
+      showFinishConfirm.value = false;
+    }
+  }, 1000);
+};
+
+const getStatusText = (status, matchStatus, matchTime) => {
+  // 首先检查比赛状态
+  if (matchStatus === 'IN_PROGRESS') {
+    return '比赛进行中';
+  } else if (matchStatus === 'FINISHED') {
+    return '比赛结束';
+  }
+  
+  // 检查是否过期
+  if (isMatchExpired(matchTime)) {
+    return '已过期';
+  }
+  
+  // 其他状态
   const map = { 0: '招募中', 1: '已应战', 2: '已结束', 3: '已取消' };
   return map[status] || '未知';
+};
+
+const isMatchExpired = (matchTime) => {
+  if (!matchTime) return false;
+  
+  const matchDate = new Date(matchTime);
+  const now = new Date();
+  const timeDiff = now - matchDate;
+  const thirtyMinutes = 30 * 60 * 1000;
+  
+  return timeDiff > thirtyMinutes;
 };
 
 const formatDate = (dateStr) => {
@@ -796,7 +933,17 @@ onUnmounted(() => {
 
 /* 开始比赛按钮区域 */
 .start-match-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
   text-align: center;
+}
+
+.finish-confirm-box {
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .start-match-btn {

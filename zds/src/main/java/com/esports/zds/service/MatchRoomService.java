@@ -4,10 +4,12 @@ import com.esports.zds.entity.MatchRoom;
 import com.esports.zds.entity.Team;
 import com.esports.zds.entity.User;
 import com.esports.zds.repository.MatchRoomRepository;
+import com.esports.zds.repository.MatchStatusHistoryRepository;
 import com.esports.zds.repository.UserRepository;
 import com.esports.zds.service.TeamService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,6 +18,9 @@ public class MatchRoomService {
 
     @Autowired
     private MatchRoomRepository matchRoomRepository;
+    
+    @Autowired
+    private MatchStatusHistoryRepository matchStatusHistoryRepository;
     
     @Autowired
     private TeamService teamService;
@@ -269,7 +274,16 @@ public class MatchRoomService {
     /**
      * [管理端] 删除约战记录
      */
+    @Transactional
     public void deleteRoom(Long roomId) {
-        matchRoomRepository.deleteById(roomId);
+        try {
+            // 先删除相关的状态历史记录
+            matchStatusHistoryRepository.deleteByMatchRoomId(roomId);
+            // 再删除约战记录
+            matchRoomRepository.deleteById(roomId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("删除约战记录失败: " + e.getMessage());
+        }
     }
 }
