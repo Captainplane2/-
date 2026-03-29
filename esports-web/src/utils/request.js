@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
+import env from '../config/env';
 
 const service = axios.create({
-  baseURL: 'http://localhost:8081/api', // 后端地址
+  baseURL: env.apiBaseURL,
   timeout: 5000
 });
 

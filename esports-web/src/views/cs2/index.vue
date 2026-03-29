@@ -139,6 +139,7 @@ import { useRouter } from 'vue-router';
 import request from '../../utils/request';
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '../../store/user';
+import env from '../../config/env';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -179,7 +180,7 @@ const fetchData = async () => {
     // 提取前4个战队
     topTeams.value = (teamRes.data || []).slice(0, 4).map(team => {
       if (team.logo && !team.logo.startsWith('http')) {
-        team.logo = `http://localhost:8081${team.logo}`;
+        team.logo = env.getFullApiUrl(team.logo);
       }
       return team;
     });

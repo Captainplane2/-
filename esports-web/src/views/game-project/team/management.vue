@@ -41,7 +41,7 @@
               <div class="logo-edit-box">
                 <el-upload
                   class="avatar-uploader"
-                  action="http://localhost:8081/api/user/upload"
+                  :action="`${env.apiBaseURL}/user/upload`"
                   :show-file-list="false"
                   :on-success="handleLogoSuccess"
                   :headers="uploadHeaders"
@@ -134,6 +134,7 @@ import { useGameProjectStore } from '../../../store/gameProject';
 import { useUserStore } from '../../../store/user';
 import request from '../../../utils/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import env from '../../../config/env';
 
 const route = useRoute();
 const router = useRouter();
@@ -190,7 +191,7 @@ const fetchTeamInfo = async () => {
     const t = res.data.find(item => item.id == teamId.value);
     if (t) {
       if (t.logo && !t.logo.startsWith('http')) {
-        t.logo = `http://localhost:8081${t.logo}`;
+        t.logo = env.getFullApiUrl(t.logo);
       }
       teamForm.value = { ...t };
     }
@@ -202,7 +203,7 @@ const fetchTeamInfo = async () => {
 const handleLogoSuccess = (res) => {
   if (res.code === 200) {
     if (res.data && !res.data.startsWith('http')) {
-      teamForm.value.logo = `http://localhost:8081${res.data}`;
+      teamForm.value.logo = env.getFullApiUrl(res.data);
     } else {
       teamForm.value.logo = res.data;
     }

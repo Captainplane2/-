@@ -7,7 +7,7 @@
           <div class="user-profile-summary">
             <el-upload
               class="avatar-uploader"
-              action="http://localhost:8081/api/user/upload"
+              :action="`${env.apiBaseURL}/user/upload`"
               :show-file-list="false"
               :on-success="handleAvatarSuccess"
               :headers="uploadHeaders"
@@ -271,6 +271,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '../../store/user';
 import request from '../../utils/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import env from '../../config/env';
 
 const route = useRoute();
 const router = useRouter();
@@ -438,7 +439,7 @@ const handleAvatarSuccess = (res) => {
   if (res.code === 200) {
     // 确保头像路径是完整的URL
     if (res.data && !res.data.startsWith('http')) {
-      editForm.value.avatar = `http://localhost:8081${res.data}`;
+      editForm.value.avatar = env.getFullApiUrl(res.data);
     } else {
       editForm.value.avatar = res.data;
     }

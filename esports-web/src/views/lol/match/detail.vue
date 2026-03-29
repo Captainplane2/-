@@ -48,7 +48,7 @@
         <!-- 发起方 -->
         <el-card shadow="hover" class="team-card host-team" @click="$router.push(`/lol/team/${room.hostTeamId}`)">
           <div class="team-role">发起方</div>
-          <el-avatar :size="80" :src="(room.hostTeamLogo && room.hostTeamLogo.startsWith('http')) ? room.hostTeamLogo : room.hostTeamLogo ? `http://localhost:8081${room.hostTeamLogo}` : 'https://via.placeholder.com/150/ff4d4f/ffffff?text=HOST'" />
+          <el-avatar :size="80" :src="(room.hostTeamLogo && room.hostTeamLogo.startsWith('http')) ? room.hostTeamLogo : room.hostTeamLogo ? env.getFullApiUrl(room.hostTeamLogo) : 'https://via.placeholder.com/150/ff4d4f/ffffff?text=HOST'" />
           <h2 class="team-name">{{ room.hostTeamName }}</h2>
           <p class="team-uni"><el-icon><School /></el-icon> {{ hostLeaderUniversity }}</p>
           <div class="host-badge">队长: {{ room.hostLeaderNickname || room.hostId }}</div>
@@ -61,7 +61,7 @@
         <!-- 应战方 -->
         <el-card v-if="room.guestTeamId" shadow="hover" class="team-card guest-team" @click="$router.push(`/lol/team/${room.guestTeamId}`)">
           <div class="team-role">应战方</div>
-          <el-avatar :size="80" :src="(room.guestTeamLogo && room.guestTeamLogo.startsWith('http')) ? room.guestTeamLogo : room.guestTeamLogo ? `http://localhost:8081${room.guestTeamLogo}` : 'https://via.placeholder.com/150/1890ff/ffffff?text=GUEST'" />
+          <el-avatar :size="80" :src="(room.guestTeamLogo && room.guestTeamLogo.startsWith('http')) ? room.guestTeamLogo : room.guestTeamLogo ? env.getFullApiUrl(room.guestTeamLogo) : 'https://via.placeholder.com/150/1890ff/ffffff?text=GUEST'" />
           <h2 class="team-name">{{ room.guestTeamName }}</h2>
           <p class="team-uni"><el-icon><School /></el-icon> {{ guestLeaderUniversity }}</p>
           <div class="guest-badge">队长: {{ room.guestLeaderNickname || room.guestId }}</div>
@@ -101,6 +101,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import request from '../../../utils/request';
 import { useUserStore } from '../../../store/user';
+import env from '../../../config/env';
 
 const route = useRoute();
 const router = useRouter();

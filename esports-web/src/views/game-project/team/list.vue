@@ -97,6 +97,7 @@ import { useUserStore } from '../../../store/user';
 import { useGameProjectStore } from '../../../store/gameProject';
 import request from '../../../utils/request';
 import { ElMessage } from 'element-plus';
+import env from '../../../config/env';
 
 const route = useRoute();
 const router = useRouter();
@@ -151,7 +152,7 @@ const fetchTeams = async () => {
     const res = await request.get('/team/list', { params });
     teams.value = res.data.map(team => {
       if (team.logo && !team.logo.startsWith('http')) {
-        team.logo = `http://localhost:8081${team.logo}`;
+        team.logo = env.getFullApiUrl(team.logo);
       }
       return team;
     });

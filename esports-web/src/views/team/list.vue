@@ -95,6 +95,7 @@ import { useUserStore } from '../../store/user';
 import { useRouter } from 'vue-router';
 import request from '../../utils/request';
 import { ElMessage } from 'element-plus';
+import env from '../../config/env';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -137,7 +138,7 @@ const fetchTeams = async () => {
     teams.value = res.data.map(team => {
       // 确保logo路径是完整的URL
       if (team.logo && !team.logo.startsWith('http')) {
-        team.logo = `http://localhost:8081${team.logo}`;
+        team.logo = env.getFullApiUrl(team.logo);
       }
       return team;
     });

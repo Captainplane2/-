@@ -70,7 +70,7 @@
           
           <div class="post-footer">
             <div class="author-info">
-              <el-avatar :size="24" :src="post.avatar ? (post.avatar.startsWith('http') ? post.avatar : `http://localhost:8081${post.avatar}`) : 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" />
+              <el-avatar :size="24" :src="post.avatar ? (post.avatar.startsWith('http') ? post.avatar : env.getFullApiUrl(post.avatar)) : 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" />
               <span class="nickname">{{ post.nickname }}</span>
               <span class="university">· {{ post.university }}</span>
             </div>
@@ -136,6 +136,7 @@ import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
 import { useUserStore } from '../../store/user';
 import request from '../../utils/request';
 import { ElMessage } from 'element-plus';
+import env from '../../config/env';
 
 const router = useRouter();
 const userStore = useUserStore();

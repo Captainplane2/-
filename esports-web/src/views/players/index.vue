@@ -191,6 +191,7 @@ import { useGameProjectStore } from '../../store/gameProject';
 import { ElMessage } from 'element-plus';
 import { Search, School } from '@element-plus/icons-vue';
 import request from '../../utils/request';
+import env from '../../config/env';
 
 const route = useRoute();
 const router = useRouter();
@@ -220,7 +221,7 @@ const getAvatarUrl = (avatar) => {
   }
   // 如果是相对路径，添加后端服务器地址
   if (avatar.startsWith('/')) {
-    return 'http://localhost:8081' + avatar;
+    return env.getFullApiUrl(avatar);
   }
   // 否则直接返回
   return avatar;

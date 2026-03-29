@@ -146,6 +146,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import request from '../../utils/request';
+import env from '../../config/env';
 
 const router = useRouter();
 const loading = ref(false);
@@ -193,7 +194,7 @@ const fetchData = async () => {
     teamList.value = (teamRes.data || []).slice(0, 4).map(team => {
       // 确保logo路径是完整的URL
       if (team.logo && !team.logo.startsWith('http')) {
-        team.logo = `http://localhost:8081${team.logo}`;
+        team.logo = env.getFullApiUrl(team.logo);
       }
       return team;
     });

@@ -7,7 +7,7 @@
           <div class="user-profile-summary">
             <el-upload
               class="avatar-uploader"
-              action="http://localhost:8081/api/user/upload"
+              :action="`${env.apiBaseURL}/user/upload`"
               :show-file-list="false"
               :on-success="handleAvatarSuccess"
               :headers="uploadHeaders"
@@ -68,7 +68,7 @@
 
         <el-card shadow="never" class="content-card">
           <div v-if="loadingComponent" class="loading-container">
-            <el-spinner :size="40" />
+            <el-icon :size="40"><Loading /></el-icon>
             <p class="loading-text">加载中...</p>
           </div>
           <component v-else :is="activeComponent" />
@@ -83,8 +83,9 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '../../../store/user';
 import { useGameProjectStore } from '../../../store/gameProject';
-import { ElMessage, ElSpinner } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import { User, Trophy, ChatLineRound, Star, Lock, School } from '@element-plus/icons-vue';
+import env from '../../../config/env';
 
 const route = useRoute();
 const router = useRouter();

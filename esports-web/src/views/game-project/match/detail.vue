@@ -54,7 +54,7 @@
             <h4 class="members-title">战队成员</h4>
             <div class="member-list">
               <div class="member-item" v-for="member in hostTeamMembers" :key="member.id">
-                <el-avatar :size="32" :src="(member.avatar && member.avatar.startsWith('http')) ? member.avatar : member.avatar ? `http://localhost:8081${member.avatar}` : ''" />
+                <el-avatar :size="32" :src="(member.avatar && member.avatar.startsWith('http')) ? member.avatar : member.avatar ? env.getFullApiUrl(member.avatar) : ''" />
                 <span class="member-name">{{ member.nickname }}</span>
               </div>
             </div>
@@ -62,7 +62,7 @@
         </el-card>
 
         <div class="vs-icon">
-          <img src="../../assets/vue.svg" alt="VS" style="width:60px; filter: grayscale(1) opacity(0.5); transform: rotate(45deg);" />
+          <img src="../../../assets/vue.svg" alt="VS" style="width:60px; filter: grayscale(1) opacity(0.5); transform: rotate(45deg);" />
         </div>
 
         <!-- 应战方 -->
@@ -87,7 +87,7 @@
             <h4 class="members-title">战队成员</h4>
             <div class="member-list">
               <div class="member-item" v-for="member in guestTeamMembers" :key="member.id">
-                <el-avatar :size="32" :src="(member.avatar && member.avatar.startsWith('http')) ? member.avatar : member.avatar ? `http://localhost:8081${member.avatar}` : ''" />
+                <el-avatar :size="32" :src="(member.avatar && member.avatar.startsWith('http')) ? member.avatar : member.avatar ? env.getFullApiUrl(member.avatar) : ''" />
                 <span class="member-name">{{ member.nickname }}</span>
               </div>
             </div>
@@ -136,6 +136,7 @@ import request from '../../../utils/request';
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '../../../store/user';
 import MatchStatusPanel from '../../../components/MatchStatusPanel.vue';
+import env from '../../../config/env';
 
 const route = useRoute();
 const router = useRouter();

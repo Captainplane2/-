@@ -40,7 +40,7 @@
               <div class="logo-edit-box">
                 <el-upload
                   class="avatar-uploader"
-                  action="http://localhost:8081/api/user/upload"
+                  :action="`${env.apiBaseURL}/user/upload`"
                   :show-file-list="false"
                   :on-success="handleLogoSuccess"
                   :headers="uploadHeaders"
@@ -132,6 +132,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '../../store/user';
 import request from '../../utils/request';
 import { ElMessage } from 'element-plus';
+import env from '../../config/env';
 
 const route = useRoute();
 const router = useRouter();
@@ -184,7 +185,7 @@ const fetchTeamInfo = async () => {
     if (t) {
       // 确保logo路径是完整的URL
       if (t.logo && !t.logo.startsWith('http')) {
-        t.logo = `http://localhost:8081${t.logo}`;
+        t.logo = env.getFullApiUrl(t.logo);
       }
       teamForm.value = { ...t };
     }
@@ -197,7 +198,7 @@ const handleLogoSuccess = (res) => {
   if (res.code === 200) {
     // 确保图片路径是完整的URL
     if (res.data && !res.data.startsWith('http')) {
-      teamForm.value.logo = `http://localhost:8081${res.data}`;
+      teamForm.value.logo = env.getFullApiUrl(res.data);
     } else {
       teamForm.value.logo = res.data;
     }
