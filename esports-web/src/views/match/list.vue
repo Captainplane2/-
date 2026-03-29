@@ -344,9 +344,21 @@ const formatDate = (dateStr) => {
 
 const isMatchExpired = (matchTime) => {
   if (!matchTime) return false;
-  const now = new Date();
+  
+  // 解析开赛时间
   const matchDate = new Date(matchTime);
-  return now > matchDate;
+  
+  // 获取当前时间
+  const now = new Date();
+  
+  // 计算时间差（毫秒）
+  const timeDiff = now - matchDate;
+  
+  // 30分钟 = 30 * 60 * 1000 毫秒
+  const thirtyMinutes = 30 * 60 * 1000;
+  
+  // 如果当前时间超过开赛时间30分钟，则认为已过期
+  return timeDiff > thirtyMinutes;
 };
 
 onMounted(() => {

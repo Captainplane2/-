@@ -63,10 +63,10 @@
             >立即应战</el-button>
             <el-button 
               v-else-if="room.status === 1" 
-              type="warning" 
+              :type="isMatchExpired(room.matchTime) ? 'info' : 'warning'" 
               class="join-btn"
               disabled
-            >等待开赛</el-button>
+            >{{ isMatchExpired(room.matchTime) ? '已过期' : '等待开赛' }}</el-button>
             <el-button 
               v-else 
               type="info" 
@@ -154,6 +154,26 @@ const formatDate = (dateStr) => {
   const period = hours < 12 ? '上午' : '下午';
   // 使用24小时制显示时间
   return `${month}月${day}日 ${period}${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}`;
+};
+
+// 判断约战是否过期（当前时间超过开赛时间30分钟）
+const isMatchExpired = (matchTime) => {
+  if (!matchTime) return false;
+  
+  // 解析开赛时间
+  const matchDate = new Date(matchTime);
+  
+  // 获取当前时间
+  const now = new Date();
+  
+  // 计算时间差（毫秒）
+  const timeDiff = now - matchDate;
+  
+  // 30分钟 = 30 * 60 * 1000 毫秒
+  const thirtyMinutes = 30 * 60 * 1000;
+  
+  // 如果当前时间超过开赛时间30分钟，则认为已过期
+  return timeDiff > thirtyMinutes;
 };
 
 const handleSizeChange = (size) => {
