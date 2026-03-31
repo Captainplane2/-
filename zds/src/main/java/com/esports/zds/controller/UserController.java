@@ -25,6 +25,7 @@ import com.esports.zds.repository.UserRepository;
 import com.esports.zds.repository.TeamRepository;
 import com.esports.zds.repository.TeamMemberRepository;
 import com.esports.zds.service.UserService;
+import com.esports.zds.config.UploadConfig;
 
 /**
  * 用户模块控制器
@@ -44,6 +45,9 @@ public class UserController {
 
     @Autowired
     private TeamRepository teamRepository;
+
+    @Autowired
+    private UploadConfig uploadConfig;
 
     /**
      * 注册
@@ -194,24 +198,20 @@ public class UserController {
         }
 
         try {
-            // 确保上传目录存在
-            String uploadPath = System.getProperty("user.dir") + "/upload";
+            String uploadPath = uploadConfig.getUploadPath();
             File directory = new File(uploadPath);
             if (!directory.exists()) {
                 directory.mkdirs();
             }
 
-            // 生成唯一文件名
             String originalFilename = file.getOriginalFilename();
             String suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
             String fileName = UUID.randomUUID().toString() + suffix;
 
-            // 保存文件
-            File dest = new File(uploadPath + "/" + fileName);
+            File dest = new File(uploadPath + File.separator + fileName);
             file.transferTo(dest);
 
-            // 返回文件访问路径
-            String fileUrl = "/upload/" + fileName;
+            String fileUrl = uploadConfig.getUrlPrefix() + fileName;
             return Result.success("上传成功", fileUrl);
         } catch (IOException e) {
             e.printStackTrace();

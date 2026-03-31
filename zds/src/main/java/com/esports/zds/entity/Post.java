@@ -55,10 +55,10 @@ public class Post {
     private Integer comments = 0;
 
     // 创建时间
-    private LocalDateTime createTime;
+    private LocalDateTime createTime = LocalDateTime.now();
 
     // 更新时间
-    private LocalDateTime updateTime;
+    private LocalDateTime updateTime = LocalDateTime.now();
 
     @PrePersist
     protected void onCreate() {

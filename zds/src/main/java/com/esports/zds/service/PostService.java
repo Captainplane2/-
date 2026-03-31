@@ -66,7 +66,7 @@ public class PostService {
                     break;
                 case "createTime":
                 default:
-                    comparator = java.util.Comparator.comparing(Post::getCreateTime);
+                    comparator = java.util.Comparator.comparing(Post::getCreateTime, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()));
                     break;
             }
             
@@ -115,7 +115,7 @@ public class PostService {
                     break;
                 case "createTime":
                 default:
-                    comparator = java.util.Comparator.comparing(Post::getCreateTime);
+                    comparator = java.util.Comparator.comparing(Post::getCreateTime, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()));
                     break;
             }
             
@@ -219,8 +219,13 @@ public class PostService {
      * 删除帖子 (连同评论)
      */
     public void deletePost(Long id) {
-        List<Comment> comments = commentRepository.findByPostIdOrderByCreateTimeAsc(id);
-        commentRepository.deleteAll(comments);
+        // 先删除帖子的所有评论
+        // 使用不排序的查询方式，避免排序操作导致的空指针异常
+        List<Comment> comments = commentRepository.findByPostId(id);
+        if (comments != null) {
+            commentRepository.deleteAll(comments);
+        }
+        // 再删除帖子本身
         postRepository.deleteById(id);
     }
 }

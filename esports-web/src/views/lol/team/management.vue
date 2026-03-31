@@ -89,7 +89,7 @@
         <el-form-item label="战队Logo">
           <el-upload
             class="avatar-uploader"
-            action="/api/upload"
+            :action="`${env.apiBaseURL}/user/upload`"
             :show-file-list="false"
             :on-success="handleLogoUpload"
             :before-upload="beforeLogoUpload"
@@ -126,6 +126,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import request from '../../../utils/request';
 import { useUserStore } from '../../../store/user';
+import env from '../../../config/env';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -190,7 +191,12 @@ const updateTeamInfo = async () => {
 
 const handleLogoUpload = (response, file) => {
   if (response.success) {
-    editForm.value.logo = response.data;
+    // 确保logo路径是完整的URL
+    let logoUrl = response.data;
+    if (logoUrl && !logoUrl.startsWith('http')) {
+      logoUrl = env.getFullApiUrl(logoUrl);
+    }
+    editForm.value.logo = logoUrl;
     ElMessage.success('Logo上传成功');
   } else {
     ElMessage.error('Logo上传失败');

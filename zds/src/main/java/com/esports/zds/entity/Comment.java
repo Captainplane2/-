@@ -33,7 +33,7 @@ public class Comment {
     private String avatar;
 
     // 创建时间
-    private LocalDateTime createTime;
+    private LocalDateTime createTime = LocalDateTime.now();
 
     @PrePersist
     protected void onCreate() {

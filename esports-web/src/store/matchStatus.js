@@ -37,7 +37,7 @@ export const useMatchStatusStore = defineStore('matchStatus', () => {
   // 准备/取消准备
   const toggleReady = async (matchId, userId, teamType) => {
     try {
-      const response = await request.post(`/api/match-status/ready/${matchId}`, null, {
+      const response = await request.post(`/match-status/ready/${matchId}`, null, {
         params: {
           userId,
           teamType
@@ -91,7 +91,7 @@ export const useMatchStatusStore = defineStore('matchStatus', () => {
   // 开始比赛
   const startMatch = async (matchId) => {
     try {
-      const response = await request.post(`/api/match-status/start/${matchId}`);
+      const response = await request.post(`/match-status/start/${matchId}`);
       
       if (response.code === 200) {
         const room = response.data;
@@ -110,7 +110,7 @@ export const useMatchStatusStore = defineStore('matchStatus', () => {
   // 确认比赛结束
   const confirmFinish = async (matchId, userId) => {
     try {
-      const response = await request.post(`/api/match-status/finish-confirm/${matchId}`, null, {
+      const response = await request.post(`/match-status/finish-confirm/${matchId}`, null, {
         params: { userId }
       });
       
@@ -154,7 +154,7 @@ export const useMatchStatusStore = defineStore('matchStatus', () => {
   // 完成比赛
   const finishMatch = async (matchId) => {
     try {
-      const response = await request.post(`/api/match-status/finish/${matchId}`);
+      const response = await request.post(`/match-status/finish/${matchId}`);
       
       if (response.code === 200) {
         const room = response.data;

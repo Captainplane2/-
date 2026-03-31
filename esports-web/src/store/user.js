@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import env from '../config/env';
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -29,7 +30,7 @@ export const useUserStore = defineStore('user', {
       if (!this.token) return null;
       
       try {
-        const response = await fetch(`http://localhost:8080/api/user/identity/game/${gameProject}`, {
+        const response = await fetch(`${env.apiBaseURL}/user/identity/game/${gameProject}`, {
           headers: {
             'Authorization': `Bearer ${this.token}`
           }
@@ -52,7 +53,7 @@ export const useUserStore = defineStore('user', {
       if (!this.token) return {};
       
       try {
-        const response = await fetch('http://localhost:8080/api/user/identity/all', {
+        const response = await fetch(`${env.apiBaseURL}/user/identity/all`, {
           headers: {
             'Authorization': `Bearer ${this.token}`
           }

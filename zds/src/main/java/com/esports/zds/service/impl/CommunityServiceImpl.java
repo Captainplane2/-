@@ -35,15 +35,23 @@ public class CommunityServiceImpl implements CommunityService {
 
     @Override
     public List<Post> listPosts(String gameProject) {
+        List<Post> posts;
         if (gameProject != null && !gameProject.isEmpty()) {
-            return postRepository.findByGameProjectAndStatusOrderByCreateTimeDesc(gameProject, 0);
+            posts = postRepository.findByGameProjectAndStatusOrderByCreateTimeDesc(gameProject, 0);
+        } else {
+            posts = postRepository.findByStatusOrderByCreateTimeDesc(0);
         }
-        return postRepository.findByStatusOrderByCreateTimeDesc(0);
+        // 处理createTime为null的情况
+        posts.removeIf(post -> post.getCreateTime() == null);
+        return posts;
     }
 
     @Override
     public List<Post> listMyPosts(Long userId) {
-        return postRepository.findByUserIdAndStatusOrderByCreateTimeDesc(userId, 0);
+        List<Post> posts = postRepository.findByUserIdAndStatusOrderByCreateTimeDesc(userId, 0);
+        // 处理createTime为null的情况
+        posts.removeIf(post -> post.getCreateTime() == null);
+        return posts;
     }
 
     @Override

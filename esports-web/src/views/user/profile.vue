@@ -438,11 +438,13 @@ const handleUpdatePassword = async () => {
 const handleAvatarSuccess = (res) => {
   if (res.code === 200) {
     // 确保头像路径是完整的URL
-    if (res.data && !res.data.startsWith('http')) {
-      editForm.value.avatar = env.getFullApiUrl(res.data);
-    } else {
-      editForm.value.avatar = res.data;
+    let avatarUrl = res.data;
+    if (avatarUrl && !avatarUrl.startsWith('http')) {
+      avatarUrl = env.getFullApiUrl(avatarUrl);
     }
+    // 更新表单和用户存储中的头像
+    editForm.value.avatar = avatarUrl;
+    userStore.setUserInfo({ ...userStore.userInfo, avatar: avatarUrl });
     handleUpdateProfile();
   }
 };

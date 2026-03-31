@@ -120,7 +120,12 @@ const uploadHeaders = computed(() => {
 
 const handleAvatarSuccess = (response, file) => {
   if (response.code === 200) {
-    userStore.updateUserInfo({ avatar: response.data });
+    // 确保头像路径是完整的URL
+    let avatarUrl = response.data;
+    if (avatarUrl && !avatarUrl.startsWith('http')) {
+      avatarUrl = env.getFullApiUrl(avatarUrl);
+    }
+    userStore.setUserInfo({ ...userStore.userInfo, avatar: avatarUrl });
     ElMessage.success('头像上传成功');
   } else {
     ElMessage.error('头像上传失败');

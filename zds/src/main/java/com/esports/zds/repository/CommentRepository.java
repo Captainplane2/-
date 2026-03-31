@@ -9,4 +9,7 @@ import java.util.List;
 public interface CommentRepository extends JpaRepository<Comment, Long> {
     // 获取帖子的所有评论
     List<Comment> findByPostIdOrderByCreateTimeAsc(Long postId);
+    
+    // 获取帖子的所有评论（不排序）
+    List<Comment> findByPostId(Long postId);
 }
