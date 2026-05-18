@@ -1,0 +1,90 @@
+@startuml 高校电竞约赛平台用例图
+
+' 基础样式设置
+skinparam useCase {
+    BackgroundColor #E6F7FF
+    BorderColor #1890FF
+}
+
+skinparam actor {
+    BackgroundColor #FFFBE6
+    BorderColor #FAAD14
+}
+
+' 定义参与者
+actor "普通用户" as User
+actor "战队队长" as Captain
+actor "赛事组织者" as Organizer
+actor "校园商户" as Merchant
+actor "管理员" as Admin
+
+' 系统边界
+rectangle "高校电竞约赛平台" {
+    ' 普通用户用例
+    usecase "注册账号" as UC1
+    usecase "登录系统" as UC2
+    usecase "浏览赛事" as UC3
+    usecase "报名参赛" as UC4
+    usecase "创建战队" as UC5
+    usecase "加入战队" as UC6
+    usecase "发布帖子" as UC7
+    usecase "评论互动" as UC8
+    usecase "查看战绩" as UC9
+    usecase "约战匹配" as UC10
+    
+    ' 战队队长用例
+    usecase "管理战队成员" as UC11
+    usecase "发布招募信息" as UC12
+    usecase "编辑战队资料" as UC13
+    usecase "提交比赛结果" as UC14
+    
+    ' 赛事组织者用例
+    usecase "创建赛事" as UC15
+    usecase "审核报名" as UC16
+    usecase "设置赛程" as UC17
+    usecase "统计比赛结果" as UC18
+    
+    ' 校园商户用例
+    usecase "发布优惠活动" as UC19
+    usecase "赞助赛事" as UC20
+    usecase "预约场地" as UC21
+    
+    ' 管理员用例
+    usecase "用户管理" as UC22
+    usecase "内容审核" as UC23
+    usecase "系统设置" as UC24
+    usecase "数据统计" as UC25
+}
+
+' 建立关联关系
+User --> UC1
+User --> UC2
+User --> UC3
+User --> UC4
+User --> UC5
+User --> UC6
+User --> UC7
+User --> UC8
+User --> UC9
+User --> UC10
+
+Captain --> UC11
+Captain --> UC12
+Captain --> UC13
+Captain --> UC14
+
+Organizer --> UC15
+Organizer --> UC16
+Organizer --> UC17
+Organizer --> UC18
+
+Merchant --> UC19
+Merchant --> UC20
+Merchant --> UC21
+
+Admin --> UC22
+Admin --> UC23
+Admin --> UC24
+Admin --> UC25
+
+@enduml
